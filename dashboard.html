@@ -1,83 +1,200 @@
 <!DOCTYPE html>
-<html lang = "pt-BR">
+<html lang="pt-BR">
+
 <head>
-    <meta char = "UTF-8">
+    <meta charset="UTF-8">
+
     <meta
-        name = "viewport"
-        content="width = device-width, initial-scale = 1.0">
-    
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
     <title>OdontoGestão - Dashboard</title>
-    <link rel = "stylesheet" href = "dashboard.css">
+
+    <link rel="stylesheet" href="dashboard.css">
+</head>
 
 <body>
-    <div class = "dashboard-container">
-        <aside class = "sidebar">
-            <div class = "sidebar-logo">
+
+    <!-- CABEÇALHO -->
+    <header class="header">
+
+        <div class="header-left" id="headerLeft">
+
+            <button
+                type="button"
+                class="menu-button"
+                id="menuButton"
+            >
+                ☰
+            </button>
+
+            <div class="header-logo">
                 <h2>OdontoGestão</h2>
             </div>
 
-            <nav class = "sidebar-menu">
-                <a href = "#" class = "active">Dashboard</a>
-                <a href = "#">Pacientes</a>
-                <a href = "#">Agenda</a>
-                <a href = "#">Financeiro</a>
+        </div>
+
+        <div class="header-user">
+            Dr(a). Nome do Usuário
+        </div>
+
+    </header>
+
+
+    <!-- ÁREA PRINCIPAL -->
+    <div class="dashboard-container">
+
+
+        <!-- MENU LATERAL -->
+        <aside class="sidebar" id="sidebar">
+
+            <nav class="sidebar-menu">
+
+                <a href="dashboard.html" class="active">
+                    Dashboard
+                </a>
+
+                <a href="#">
+                    Pacientes
+                </a>
+
+                <a href="#">
+                    Agenda
+                </a>
+
+                <a href="#">
+                    Financeiro
+                </a>
+
             </nav>
-            <a href = "index.html" class = "logout-button">Sair</a>
+
+            <a href="index.html" class="logout-button">
+                Sair
+            </a>
+
         </aside>
 
-        <main class = "main-content">
-            <header class = "topbar">
+
+        <!-- CONTEÚDO -->
+        <main class="main-content">
+
+            <div class="topbar">
+
                 <div>
                     <h1>Dashboard</h1>
                     <p>Visão Geral da Clínica</p>
                 </div>
 
-                <div class = "user">
-                    Dr(a). Nome do Usuário
-                </div>
+            </div>
 
-            </header>
 
-            <section class = "cards">
-                <div class = "card">
+            <section class="cards">
 
+                <div class="card">
                     <p>Consultas de hoje</p>
                     <h2>8</h2>
-
                 </div>
 
-                <div class = "card">
-
+                <div class="card">
                     <p>Consultas confirmadas</p>
                     <h2>5</h2>
-
                 </div>
 
-                <div class = "card">
-
-                    <p>Consultas Canceladas</p>
+                <div class="card">
+                    <p>Consultas canceladas</p>
                     <h2>1</h2>
-
                 </div>
 
-                <div class = "card">
-
-                    <p> Total de Pacientes</p>
+                <div class="card">
+                    <p>Total de pacientes</p>
                     <h2>124</h2>
-
                 </div>
 
-                <div class = "card">
+                <div class="card">
                     <p>Atendimentos concluídos</p>
                     <h2>3</h2>
                 </div>
 
             </section>
 
+            <section class="appointments">
+
+                <div class="section-header">
+                    <h2>Próximas Consultas</h2>
+
+                    <a href="#">
+                        Ver agenda
+                    </a>
+                </div>
+
+
+                <div class="appointments-grid">
+
+                    <!-- CONSULTA 1 -->
+                    <div class="appointment-card">
+
+                        <div class="appointment-time">
+                            09:00
+                        </div>
+
+                        <div class="appointment-info">
+                            <strong>João da Silva</strong>
+                            <span>Limpeza Dental</span>
+                        </div>
+
+                        <span class="status confirmed">
+                            Confirmada
+                        </span>
+
+                    </div>
+
+
+                    <!-- CONSULTA 2 -->
+                    <div class="appointment-card">
+
+                        <div class="appointment-time">
+                            10:00
+                        </div>
+
+                        <div class="appointment-info">
+                            <strong>João Santos</strong>
+                            <span>Avaliação</span>
+                        </div>
+
+                        <span class="status waiting">
+                            Agendada
+                        </span>
+
+                    </div>
+
+
+                    <!-- CONSULTA 3 -->
+                    <div class="appointment-card">
+
+                        <div class="appointment-time">
+                            11:30
+                        </div>
+
+                        <div class="appointment-info">
+                            <strong>Ana Oliveira</strong>
+                            <span>Retorno</span>
+                        </div>
+
+                        <span class="status canceled">
+                            Cancelada
+                        </span>
+
+                    </div>
+
+                </div>
+
+            </section>
+
         </main>
 
-
     </div>
+
 
     <script src="dashboard.js"></script>
 
