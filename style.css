@@ -172,3 +172,15 @@ input[type="password"]::-ms-reveal,
 input[type="password"]::-ms-clear {
     display: none;
 }
+
+.error-message {
+    color: #d32f2f;
+    font-size: 13px;
+    margin-top: 6px;
+    min-height: 16px;
+}
+
+.input-error {
+    border-color: #d32f2f !important;
+}
+

@@ -24,7 +24,7 @@
                 Entre para gerenciar sua clínica
             </p>
 
-            <form>
+            <form id = "loginForm" novalidate>
                 <div class = "input-group">
                     <label for = "email">E-mail</label>
                     <input
@@ -32,32 +32,33 @@
                         id = "email"
                         placeholder = "seuemail@email.com.br"
                     >
+
+                    <span class = "error-message" id = "email-error"></span>
                 </div>
 
                <div class="input-group">
-                <label for="senha">Senha</label>
+                    <label for="senha">Senha</label>
 
-                <div class="password-container">
+                    <div class="password-container">
 
-                    <input
-                        type="password"
-                        id="senha"
-                        placeholder="Digite sua senha"
-                    
-                    >
+                        <input
+                            type="password"
+                            id="senha"
+                            placeholder="Digite sua senha"
+                        
+                        >
 
-                    <button 
-                        type = "button"
-                        id = "togglePassword"
-                        class = "password-button"
-                    >
-                        <span class="password-icon">🙈</span>
+                        <button 
+                            type = "button"
+                            id = "togglePassword"
+                            class = "password-button"
+                        >
+                            <span class="password-icon">🙈</span>
                     </button>
 
-
-
-
-                </div>
+                    </div>
+                    <span class = "error-message" id = "senha-error"></span>
+               </div>
 
                 <button 
                     type = "submit" 
