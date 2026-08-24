@@ -1,4 +1,4 @@
-sem comentario
+/*sem comentario
 
 para comitar pegar o codigo que foi feito em outro pc:
 
@@ -17,3 +17,5 @@ cd SEU-REPOSITORIO
 code .
 
 tema dark horizon
+tema bluloco dark theme
+*/
