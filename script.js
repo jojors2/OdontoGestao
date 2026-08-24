@@ -34,8 +34,6 @@ function validateEmail(email) {
 
 }
 
-
-
 loginForm.addEventListener("submit", function(event) {
 
     emailError.textContent = "";
@@ -91,8 +89,6 @@ loginForm.addEventListener("submit", function(event) {
         senhaError.textContent = "";
         senhaInput.classList.remove("input-error");
     });
-
-    
 
     if (formularioValido) {
         alert("Login realizado com sucesso!");
