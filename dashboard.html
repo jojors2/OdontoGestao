@@ -7,8 +7,7 @@
         content="width = device-width, initial-scale = 1.0">
     
     <title>OdontoGestão - Dashboard</title>
-    <link rel = "stylesheet" href = "style.css">
-</head>
+    <link rel = "stylesheet" href = "dashboard.css">
 
 <body>
     <div class = "dashboard-container">
@@ -25,7 +24,7 @@
             <a href = "index.html" class = "logout-button">Sair</a>
         </aside>
 
-        <main clas = "main-content">
+        <main class = "main-content">
             <header class = "topbar">
                 <div>
                     <h1>Dashboard</h1>
@@ -75,21 +74,41 @@
                     <a href = "#" > Ver agenda</a>
                 </div>
 
-                <div class = "appointment">
-                    <div class = "appointment-time">
-                        09:00
-                    </div>                
-                </div>
+                <div class = "appointments-grid">
+                    <div class="appointment-card">
+                        <div class="appointment-time">09:00</div>
+                        <div class="appointment-info">
+                            <strong>João da Silva</strong>
+                            <span>Limpeza Dental</span>
+                        </div>
+                        <span class="status confirmed">Confirmada</span>
+                    </div>
 
-                <div class = "appointment-info">
-                    <strong>João da Silva</strong>
-                    <span>Limpeza Dental</span>
-                </div>
+                    <div class="appointment-card">
+                        <div class="appointment-time">10:00</div>
+                        <div class="appointment-info">
+                            <strong>João Santos</strong>
+                            <span>Avaliação</span>
+                        </div>
+                        <span class="status waiting">Agendada</span>
+                    </div>
 
-                <div >
-                    <span class = "status confirmed">
-                    Confirmada   
-                    </span>
+                    <div class="appointment-card">
+                        <div class="appointment-time">11:30</div>
+                        <div class="appointment-info">
+                            <strong>Ana Oliveira</strong>
+                            <span>Retorno</span>
+                        </div>
+                        <span class="status confirmed">Confirmada</span>
+                    </div>
+                    <div class="appointment-card">
+                        <div class="appointment-time">14:00</div>
+                        <div class="appointment-info">
+                            <strong>Pedro Costa</strong>
+                            <span>Extração</span>
+                        </div>
+                        <span class="status canceled">Cancelada</span>
+                    
                 </div>
 
             </section>
