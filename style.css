@@ -1,0 +1,68 @@
+/*
+cor botão: #1E88E5
+cor fundo: #E3F2FD
+cor titulos e rodapé: #0D47A1
+cor subtitulos: #263238;
+*/
+
+*{
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, sans serif;
+    background-color: #E3F2FD;
+}
+
+.login-container{
+    width: 100%;
+    min-height: 100vh;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.login-card{
+    width: 100%;
+    max-width: 400px;
+    background-color: #ffff;
+    padding: 40px;
+    border-radius: 15px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.logo{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px; 
+
+    margin-bottom: 20px;
+}
+
+.logo h1{
+    font-size: 32px;
+    color: #0D47A1;
+}
+
+.login-card h2{
+    text-align: center;
+    color: #263238;
+    margin-bottom: 5px;
+}
+
+.subtitle{
+    text-align: center;
+    color: #777;
+    margin-bottom: 20px;
+}
+
+.input-group{
+    display:flex;
+    flex-direction: column;
+
+    margin-bottom: 15px;
+}
