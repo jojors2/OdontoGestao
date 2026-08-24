@@ -92,5 +92,6 @@ loginForm.addEventListener("submit", function(event) {
 
     if (formularioValido) {
         alert("Login realizado com sucesso!");
+        window.location.href = "dashboard.html";
     }
 });
