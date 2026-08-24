@@ -15,3 +15,5 @@ copiar tudo de uma vez para o outro PC:
 git clone https://github.com/SEU-USUARIO/SEU-REPOSITORIO.git
 cd SEU-REPOSITORIO
 code .
+
+tema dark horizon

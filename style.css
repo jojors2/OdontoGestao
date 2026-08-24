@@ -95,7 +95,7 @@ body {
     border-color: #1E88E5;
 }
 
-button{
+.login-button{
     width: 100%;
 
     padding: 14px;
@@ -115,7 +115,7 @@ button{
     margin-top: 10px;
 }
 
-button:hover{
+.login-button:hover{
     background-color:  #6fbafc;
 }
 
@@ -146,4 +146,29 @@ button:hover{
     .login-card h2{
         font-size: 18px;
     }
+}
+
+.password-container {
+    position: relative;
+}
+
+.password-container input{
+    padding-right: 40px;
+}
+
+.password-button{
+    position: absolute;
+    top: 50%;
+    right: 10px;
+    transform: translateY(-50%);
+
+    background: none;
+    border: none;
+
+    cursor: pointer;
+}
+
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear {
+    display: none;
 }
