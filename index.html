@@ -36,14 +36,27 @@
 
                 <div class = "input-group">
                     <label for = "senha">Senha</label>
-                    <input
-                        type = "password"
-                        id = "senha"
-                        placeholder = "Digite sua senha"
-                    >
+                    <div class="password-container">
+
+                        <input
+                            type="password"
+                            id="senha"
+                            placeholder="Digite sua senha"
+                        >
+
+                        <button
+                            type="button"
+                            id="togglePassword"
+                            class="password-button"
+                        >
+                            👁
+                        </button>
+
+                    </div>
                 </div>
 
-                <button type = "submit">
+                <button 
+                    type = "submit">
                     Entrar
                 </button>
 
@@ -56,6 +69,8 @@
         </div>
         
     </main>
+
+<script src = "script.js"></script>
 
 </body>
 </html>
