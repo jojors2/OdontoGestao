@@ -1,0 +1,197 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: Arial, sans-serif;
+  background-color: #eaf4fc;
+  color: #263238;
+}
+
+/* =========================
+   HEADER
+========================= */
+
+.header {
+  width: 100%;
+  height: 60px;
+
+  position: fixed;
+  top: 0;
+  left: 0;
+
+  display: flex;
+
+  background-color: white;
+
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+
+  z-index: 1000;
+}
+
+.header-left {
+  width: 250px;
+  height: 100%;
+
+  display: flex;
+  align-items: center;
+
+  padding: 0 18px;
+
+  background-color: #0d47a1;
+}
+
+.header-logo {
+  display: flex;
+  align-items: center;
+
+  gap: 10px;
+}
+
+.header-logo span {
+  font-size: 26px;
+}
+
+.header-logo h2 {
+  color: white;
+  font-size: 20px;
+}
+
+.header-right {
+  flex: 1;
+
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+
+  padding: 0 25px;
+}
+
+.header-user {
+  display: flex;
+  align-items: center;
+
+  gap: 12px;
+}
+
+.user-info {
+  display: flex;
+  flex-direction: column;
+
+  text-align: right;
+}
+
+.user-info strong {
+  font-size: 14px;
+}
+
+.user-info span {
+  color: #607d8b;
+  font-size: 12px;
+}
+
+.user-avatar {
+  width: 38px;
+  height: 38px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 50%;
+
+  background-color: #1e88e5;
+  color: white;
+
+  font-weight: bold;
+}
+
+/* Apenas para o teste atual */
+
+main {
+  min-height: 100vh;
+  margin-left: 250px;
+  padding: 90px 30px 30px;
+  background-color: #eaf4fc;
+
+}
+
+main h1 {
+  color: #0d47a1;
+}
+
+/* =========================
+   SIDEBAR
+========================= */
+
+.sidebar {
+  width: 250px;
+  height: calc(100vh - 60px);
+
+  position: fixed;
+  top: 60px;
+  left: 0;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+
+  padding: 20px 12px;
+
+  background-color: white;
+
+  border-right: 1px solid #dce6ee;
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+
+  gap: 6px;
+}
+
+.sidebar-item {
+  width: 100%;
+
+  display: flex;
+  align-items: center;
+
+  gap: 12px;
+
+  padding: 13px 15px;
+
+  border: none;
+  border-radius: 8px;
+
+  background-color: transparent;
+  color: #455a64;
+
+  font-size: 14px;
+  text-align: left;
+
+  cursor: pointer;
+
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.sidebar-item:hover {
+  background-color: #e3f2fd;
+}
+
+.sidebar-item.active {
+  background-color: #e3f2fd;
+  color: #0d47a1;
+
+  font-weight: bold;
+}
+
+.sidebar-item span:first-child {
+  width: 22px;
+
+  display: flex;
+  justify-content: center;
+
+  font-size: 18px;
+}
