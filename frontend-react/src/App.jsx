@@ -1,18 +1,12 @@
-import Header from "./components/layout/Header";
-import Sidebar from "./components/layout/Sidebar";
-
+import AppLayout from "./components/layout/AppLayout";
+import Dashboard from "./pages/Dashboard/Dashboard";
 
 function App() {
   return (
-    <>
-      <Header />
-      <Sidebar />
-
-      <main>
-        <h1>OdontoGestão</h1>
-      </main>
-      
-    </>
+    <AppLayout>
+      <Dashboard />
+    </AppLayout>
   );
 }
+
 export default App;

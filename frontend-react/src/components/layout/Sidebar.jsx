@@ -5,7 +5,7 @@ function Sidebar() {
 
             <nav className="sidebar-nav">
 
-                <button className = "sidebar-item-active">
+                <button className = "sidebar-item">
                     <span>Dashboard</span>
                 </button>
 
