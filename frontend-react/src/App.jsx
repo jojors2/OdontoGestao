@@ -1,5 +1,5 @@
 import AppLayout from "./components/layout/AppLayout";
-import Dashboard from "./pages/Dashboard/Dashboard";
+import Dashboard from "./pages/PrimeiraVersão/Dashboard/Dashboard";
 
 function App() {
   return (
