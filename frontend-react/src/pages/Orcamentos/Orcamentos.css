@@ -1,0 +1,857 @@
+.orcamentos-page {
+  width: 100%;
+
+  min-height: calc(100vh - 60px);
+
+  padding: 25px 20px 30px;
+
+  background-color: #eaf4fc;
+}
+
+/* ===============================
+   CABEÇALHO
+================================ */
+
+.orcamentos-page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+
+  margin-bottom: 24px;
+}
+
+.orcamentos-page-header h1 {
+  color: #0d47a1;
+
+  font-size: 28px;
+
+  margin-bottom: 4px;
+}
+
+.orcamentos-page-header p {
+  margin-top: 5px;
+
+  color: #718096;
+
+  font-size: 14px;
+}
+
+/* ===============================
+   BOTÕES
+================================ */
+
+.orcamentos-btn-primary {
+  min-height: 42px;
+
+  border: none;
+  border-radius: 9px;
+
+  padding: 0 16px;
+
+  background: #0d48a1;
+  color: #ffffff;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  font-size: 14px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s,
+    transform 0.2s;
+}
+
+.orcamentos-btn-primary:hover {
+  background: #005eff;
+}
+
+.orcamentos-btn-primary:active {
+  transform: scale(0.98);
+}
+
+.orcamentos-btn-secondary {
+  min-height: 42px;
+
+  border: 1px solid #d9e2ec;
+  border-radius: 9px;
+
+  padding: 0 17px;
+
+  background: #ffffff;
+  color: #52616f;
+
+  font-weight: 600;
+
+  cursor: pointer;
+}
+
+.orcamentos-btn-secondary:hover {
+  background: #f5f8fa;
+}
+
+/* ===============================
+   CARDS
+================================ */
+
+.orcamentos-cards {
+  width: 100%;
+
+  display: grid;
+
+  grid-template-columns:
+    repeat(4, minmax(0, 1fr));
+
+  gap: 16px;
+
+  margin-bottom: 24px;
+}
+
+.orcamentos-card {
+  min-width: 0;
+
+  padding: 20px;
+
+  background: #ffffff;
+
+  border: 1px solid #e8eef4;
+  border-radius: 12px;
+
+  display: flex;
+  align-items: center;
+  gap: 15px;
+
+  box-shadow:
+    0 2px 8px rgba(15, 23, 42, 0.03);
+}
+
+.orcamentos-card-icon {
+  width: 46px;
+  height: 46px;
+
+  flex-shrink: 0;
+
+  border-radius: 10px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.orcamentos-card-icon.azul {
+  background: #e7f1ff;
+  color: #1565c0;
+}
+
+.orcamentos-card-icon.amarelo {
+  background: #fff5df;
+  color: #d97706;
+}
+
+.orcamentos-card-icon.verde {
+  background: #e7f8ef;
+  color: #159447;
+}
+
+.orcamentos-card-icon.roxo {
+  background: #f1eafe;
+  color: #7546c9;
+}
+
+.orcamentos-card-info {
+  min-width: 0;
+
+  display: flex;
+  flex-direction: column;
+}
+
+.orcamentos-card-info span {
+  color: #718096;
+
+  font-size: 13px;
+
+  margin-bottom: 4px;
+}
+
+.orcamentos-card-info strong {
+  color: #1f2937;
+
+  font-size: 21px;
+  font-weight: 700;
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ===============================
+   LISTA
+================================ */
+
+.orcamentos-lista {
+  width: 100%;
+  min-width: 0;
+
+  background: #ffffff;
+
+  border: 1px solid #e8eef4;
+  border-radius: 12px;
+
+  overflow: hidden;
+
+  box-shadow:
+    0 2px 8px rgba(15, 23, 42, 0.03);
+}
+
+.orcamentos-lista-header {
+  padding: 20px;
+
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  gap: 20px;
+
+  border-bottom: 1px solid #edf1f5;
+}
+
+.orcamentos-lista-header h2 {
+  margin: 0;
+
+  color: #263238;
+
+  font-size: 18px;
+}
+
+.orcamentos-lista-header p {
+  margin-top: 4px;
+
+  color: #78909c;
+
+  font-size: 13px;
+}
+
+/* ===============================
+   FILTROS
+================================ */
+
+.orcamentos-filtros {
+  display: flex;
+  align-items: center;
+
+  gap: 10px;
+}
+
+.orcamentos-search {
+  width: 260px;
+  height: 40px;
+
+  padding: 0 12px;
+
+  border: 1px solid #dce5ec;
+  border-radius: 8px;
+
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  color: #90a4ae;
+
+  background: #ffffff;
+}
+
+.orcamentos-search:focus-within {
+  border-color: #1565c0;
+
+  box-shadow:
+    0 0 0 3px rgba(21, 101, 192, 0.08);
+}
+
+.orcamentos-search input {
+  width: 100%;
+
+  border: none;
+  outline: none;
+
+  background: transparent;
+
+  color: #37474f;
+
+  font-size: 13px;
+}
+
+.orcamentos-search input::placeholder {
+  color: #9aa8b2;
+}
+
+.orcamentos-filtros select {
+  height: 40px;
+
+  min-width: 145px;
+
+  padding: 0 12px;
+
+  border: 1px solid #dce5ec;
+  border-radius: 8px;
+
+  outline: none;
+
+  background: #ffffff;
+
+  color: #52616f;
+
+  cursor: pointer;
+}
+
+/* ===============================
+   TABELA
+================================ */
+
+.orcamentos-table-wrapper {
+  width: 100%;
+
+  overflow-x: auto;
+}
+
+.orcamentos-table {
+  width: 100%;
+
+  border-collapse: collapse;
+}
+
+.orcamentos-table thead {
+  background: #f8fafc;
+}
+
+.orcamentos-table th {
+  padding: 13px 18px;
+
+  color: #78909c;
+
+  text-align: left;
+
+  font-size: 11px;
+  font-weight: 700;
+
+  text-transform: uppercase;
+
+  white-space: nowrap;
+
+  border-bottom: 1px solid #edf1f5;
+}
+
+.orcamentos-table td {
+  padding: 15px 18px;
+
+  color: #52616f;
+
+  font-size: 13px;
+
+  border-bottom: 1px solid #f0f3f5;
+}
+
+.orcamentos-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.orcamentos-table tbody tr {
+  transition: background 0.2s;
+}
+
+.orcamentos-table tbody tr:hover {
+  background: #f9fbfd;
+}
+
+/* ===============================
+   PACIENTE
+================================ */
+
+.orcamentos-paciente {
+  display: flex;
+  align-items: center;
+
+  gap: 10px;
+
+  color: #263238;
+
+  font-weight: 600;
+
+  white-space: nowrap;
+}
+
+.orcamentos-avatar {
+  width: 35px;
+  height: 35px;
+
+  flex-shrink: 0;
+
+  border-radius: 50%;
+
+  background: #e7f1ff;
+  color: #1565c0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-weight: 700;
+}
+
+.orcamentos-valor {
+  color: #263238 !important;
+
+  font-weight: 600;
+
+  white-space: nowrap;
+}
+
+/* ===============================
+   STATUS
+================================ */
+
+.orcamentos-status {
+  width: fit-content;
+
+  display: inline-flex;
+  align-items: center;
+
+  border-radius: 20px;
+
+  padding: 5px 10px;
+
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.orcamentos-status.pendente {
+  background: #fff5df;
+  color: #c56a00;
+}
+
+.orcamentos-status.aprovado {
+  background: #e7f8ef;
+  color: #15803d;
+}
+
+.orcamentos-status.recusado {
+  background: #fdecec;
+  color: #c62828;
+}
+
+/* ===============================
+   AÇÕES
+================================ */
+
+.orcamentos-acoes {
+  display: flex;
+  align-items: center;
+
+  gap: 5px;
+}
+
+.orcamentos-acao {
+  width: 32px;
+  height: 32px;
+
+  border: none;
+  border-radius: 7px;
+
+  background: transparent;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  cursor: pointer;
+
+  transition: 0.2s;
+}
+
+.orcamentos-acao.visualizar {
+  color: #1565c0;
+}
+
+.orcamentos-acao.visualizar:hover {
+  background: #e7f1ff;
+}
+
+.orcamentos-acao.editar {
+  color: #d97706;
+}
+
+.orcamentos-acao.editar:hover {
+  background: #fff5df;
+}
+
+.orcamentos-acao.excluir {
+  color: #d32f2f;
+}
+
+.orcamentos-acao.excluir:hover {
+  background: #fdecec;
+}
+
+/* ===============================
+   VAZIO
+================================ */
+
+.orcamentos-vazio {
+  height: 230px;
+
+  text-align: center !important;
+
+  color: #90a4ae !important;
+}
+
+.orcamentos-vazio svg {
+  display: block;
+
+  margin: 0 auto 10px;
+}
+
+.orcamentos-vazio strong {
+  display: block;
+
+  color: #52616f;
+
+  font-size: 14px;
+
+  margin-bottom: 4px;
+}
+
+.orcamentos-vazio span {
+  font-size: 12px;
+}
+
+/* ===============================
+   MODAL
+================================ */
+
+.orcamentos-modal-overlay {
+  position: fixed;
+
+  inset: 0;
+
+  z-index: 5000;
+
+  padding: 20px;
+
+  background: rgba(15, 23, 42, 0.48);
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.orcamentos-modal {
+  width: min(100%, 570px);
+
+  max-height: calc(100vh - 40px);
+
+  overflow-y: auto;
+
+  background: #ffffff;
+
+  border-radius: 14px;
+
+  box-shadow:
+    0 20px 60px rgba(15, 23, 42, 0.2);
+}
+
+.orcamentos-modal-header {
+  padding: 20px;
+
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+
+  gap: 20px;
+
+  border-bottom: 1px solid #edf1f5;
+}
+
+.orcamentos-modal-header h2 {
+  margin: 0;
+
+  color: #263238;
+
+  font-size: 20px;
+}
+
+.orcamentos-modal-header p {
+  margin-top: 4px;
+
+  color: #78909c;
+
+  font-size: 13px;
+}
+
+.orcamentos-modal-close {
+  width: 35px;
+  height: 35px;
+
+  border: none;
+  border-radius: 8px;
+
+  background: transparent;
+
+  color: #78909c;
+
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.orcamentos-modal-close:hover {
+  background: #f1f5f9;
+
+  color: #263238;
+}
+
+/* ===============================
+   FORM
+================================ */
+
+.orcamentos-form {
+  padding: 20px;
+
+  display: grid;
+
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+
+  gap: 17px;
+}
+
+.orcamentos-form-group {
+  min-width: 0;
+
+  display: flex;
+  flex-direction: column;
+
+  gap: 7px;
+}
+
+.orcamentos-form-group.full {
+  grid-column: 1 / -1;
+}
+
+.orcamentos-form-group label {
+  color: #455a64;
+
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.orcamentos-form-group input,
+.orcamentos-form-group select {
+  width: 100%;
+  height: 42px;
+
+  padding: 0 12px;
+
+  border: 1px solid #dce5ec;
+  border-radius: 8px;
+
+  outline: none;
+
+  background: #ffffff;
+
+  color: #37474f;
+
+  font-size: 13px;
+}
+
+.orcamentos-form-group input:focus,
+.orcamentos-form-group select:focus {
+  border-color: #1565c0;
+
+  box-shadow:
+    0 0 0 3px rgba(21, 101, 192, 0.08);
+}
+
+.orcamentos-modal-footer {
+  grid-column: 1 / -1;
+
+  padding-top: 5px;
+
+  display: flex;
+  justify-content: flex-end;
+
+  gap: 10px;
+}
+
+/* ===============================
+   RESPONSIVO - TABLET
+================================ */
+
+@media (max-width: 1100px) {
+  .orcamentos-cards {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .orcamentos-lista-header {
+    align-items: flex-start;
+
+    flex-direction: column;
+  }
+
+  .orcamentos-filtros {
+    width: 100%;
+  }
+
+  .orcamentos-search {
+    width: 100%;
+  }
+}
+
+/* ===============================
+   RESPONSIVO - MOBILE
+================================ */
+
+@media (max-width: 700px) {
+  .orcamentos-page {
+    padding: 18px 14px;
+  }
+
+  .orcamentos-page-header {
+    align-items: stretch;
+
+    flex-direction: column;
+  }
+
+  .orcamentos-page-header h1 {
+    font-size: 24px;
+  }
+
+  .orcamentos-btn-primary {
+    width: 100%;
+  }
+
+  .orcamentos-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .orcamentos-lista-header {
+    padding: 16px;
+  }
+
+  .orcamentos-filtros {
+    flex-direction: column;
+  }
+
+  .orcamentos-filtros select {
+    width: 100%;
+  }
+
+  /* TABELA VIRA CARDS */
+
+  .orcamentos-table-wrapper {
+    overflow: visible;
+  }
+
+  .orcamentos-table,
+  .orcamentos-table tbody,
+  .orcamentos-table tr,
+  .orcamentos-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .orcamentos-table thead {
+    display: none;
+  }
+
+  .orcamentos-table tbody {
+    padding: 12px;
+  }
+
+  .orcamentos-table tbody tr {
+    margin-bottom: 12px;
+
+    padding: 14px;
+
+    border: 1px solid #e8eef4;
+    border-radius: 10px;
+
+    background: #ffffff;
+  }
+
+  .orcamentos-table tbody tr:last-child {
+    margin-bottom: 0;
+  }
+
+  .orcamentos-table td {
+    min-height: 42px;
+
+    padding: 8px 0;
+
+    border: none;
+
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    gap: 20px;
+
+    text-align: right;
+  }
+
+  .orcamentos-table td::before {
+    content: attr(data-label);
+
+    flex-shrink: 0;
+
+    color: #78909c;
+
+    font-size: 11px;
+    font-weight: 700;
+
+    text-transform: uppercase;
+  }
+
+  .orcamentos-table td:first-child {
+    padding-top: 0;
+  }
+
+  .orcamentos-table td:last-child {
+    padding-bottom: 0;
+  }
+
+  .orcamentos-acoes {
+    justify-content: flex-end;
+  }
+
+  .orcamentos-vazio {
+    display: table-cell !important;
+  }
+
+  .orcamentos-vazio::before {
+    display: none;
+  }
+
+  .orcamentos-form {
+    grid-template-columns: 1fr;
+  }
+
+  .orcamentos-form-group.full {
+    grid-column: auto;
+  }
+
+  .orcamentos-modal-footer {
+    grid-column: auto;
+
+    flex-direction: column-reverse;
+  }
+
+  .orcamentos-modal-footer button {
+    width: 100%;
+  }
+}

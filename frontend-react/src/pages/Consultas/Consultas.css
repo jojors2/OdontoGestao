@@ -1,0 +1,763 @@
+/* ==========================================
+   CONSULTAS
+========================================== */
+
+.consultas-page {
+  width: 100%;
+
+  min-height: calc(100vh - 60px);
+
+  padding: 25px 20px 30px;
+
+  background-color: #eaf4fc;
+}
+
+
+/* ==========================================
+   CABEÇALHO
+========================================== */
+
+.consultas-page-header {
+  display: flex;
+
+  justify-content: space-between;
+  align-items: center;
+
+  gap: 20px;
+
+  margin-bottom: 25px;
+}
+
+.consultas-page-header h1 {
+  color: #0d47a1;
+
+  font-size: 28px;
+
+  margin-bottom: 4px;
+}
+
+.consultas-page-header p {
+  color: #607d8b;
+
+  font-size: 14px;
+}
+
+
+/* ==========================================
+   NOVA CONSULTA
+========================================== */
+
+.consultas-nova-button {
+   min-height: 42px;
+
+  padding: 0 17px;
+
+  border: none;
+  border-radius: 8px;
+
+  background: #0d47a1;
+  color: white;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 8px;
+
+  font-size: 14px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.consultas-nova-button:hover {
+  background: #005eff;
+}
+
+
+/* ==========================================
+   CARDS
+========================================== */
+
+.consultas-cards {
+  width: 100%;
+
+  display: grid;
+
+  grid-template-columns:
+    repeat(4, minmax(0, 1fr));
+
+  gap: 18px;
+
+  margin-bottom: 24px;
+}
+
+.consultas-card {
+  min-width: 0;
+
+  padding: 20px;
+
+  background: #ffffff;
+
+  border: 1px solid #e5edf3;
+  border-radius: 10px;
+
+  display: flex;
+  align-items: center;
+
+  gap: 15px;
+
+  box-shadow:
+    0 2px 8px rgba(38, 50, 56, 0.04);
+
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.consultas-card:hover {
+  transform: translateY(-2px);
+
+  box-shadow:
+    0 5px 15px rgba(38, 50, 56, 0.07);
+}
+
+
+/* ÍCONE */
+
+.consultas-card-icon {
+  width: 48px;
+  min-width: 48px;
+  height: 48px;
+
+  border-radius: 10px;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.consultas-icon-blue {
+  background: #e3f2fd;
+  color: #1976d2;
+}
+
+.consultas-icon-orange {
+  background: #fff3e0;
+  color: #ef6c00;
+}
+
+.consultas-icon-green {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.consultas-icon-red {
+  background: #ffebee;
+  color: #c62828;
+}
+
+
+/* TEXTO DO CARD */
+
+.consultas-card-info {
+  min-width: 0;
+
+  display: flex;
+  flex-direction: column;
+}
+
+.consultas-card-info span {
+  color: #78909c;
+
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.consultas-card-info strong {
+  margin: 2px 0;
+
+  color: #263238;
+
+  font-size: 25px;
+  font-weight: 700;
+}
+
+.consultas-card-info small {
+  color: #90a4ae;
+
+  font-size: 11px;
+}
+
+
+/* ==========================================
+   LISTA
+========================================== */
+
+.consultas-lista {
+  width: 100%;
+  min-width: 0;
+
+  background: #ffffff;
+
+  border: 1px solid #e5edf3;
+
+  border-radius: 10px;
+
+  overflow: hidden;
+
+  box-shadow:
+    0 2px 8px rgba(38, 50, 56, 0.04);
+}
+
+
+/* CABEÇALHO DA LISTA */
+
+.consultas-lista-topo {
+  width: 100%;
+
+  padding: 20px;
+
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  gap: 20px;
+
+  border-bottom: 1px solid #edf2f5;
+}
+
+.consultas-lista-titulo {
+  display: flex;
+  align-items: center;
+
+  gap: 11px;
+}
+
+.consultas-lista-icon {
+  width: 39px;
+  height: 39px;
+
+  border-radius: 8px;
+
+  background: #e3f2fd;
+
+  color: #0d47a1;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.consultas-lista-titulo h2 {
+  margin: 0 0 3px;
+
+  color: #263238;
+
+  font-size: 17px;
+}
+
+.consultas-lista-titulo p {
+  margin: 0;
+
+  color: #90a4ae;
+
+  font-size: 12px;
+}
+
+
+/* ==========================================
+   FILTROS
+========================================== */
+
+.consultas-filtros {
+  display: flex;
+  align-items: center;
+
+  gap: 10px;
+}
+
+.consultas-busca {
+  width: 240px;
+  height: 39px;
+
+  padding: 0 11px;
+
+  border: 1px solid #dce6ec;
+  border-radius: 7px;
+
+  display: flex;
+  align-items: center;
+
+  gap: 7px;
+
+  color: #90a4ae;
+
+  background: white;
+}
+
+.consultas-busca:focus-within {
+  border-color: #1976d2;
+
+  box-shadow:
+    0 0 0 2px
+    rgba(25, 118, 210, 0.08);
+}
+
+.consultas-busca input {
+  width: 100%;
+
+  border: none;
+  outline: none;
+
+  background: transparent;
+
+  color: #37474f;
+
+  font-size: 13px;
+}
+
+.consultas-busca input::placeholder {
+  color: #b0bec5;
+}
+
+
+/* SELECT */
+
+.consultas-filtros select {
+  height: 39px;
+
+  min-width: 150px;
+
+  padding: 0 10px;
+
+  border: 1px solid #dce6ec;
+  border-radius: 7px;
+
+  outline: none;
+
+  background: white;
+
+  color: #546e7a;
+
+  font-size: 13px;
+
+  cursor: pointer;
+}
+
+.consultas-filtros select:focus {
+  border-color: #1976d2;
+}
+
+
+/* ==========================================
+   TABELA
+========================================== */
+
+.consultas-table-container {
+  width: 100%;
+  min-width: 0;
+
+  overflow-x: auto;
+}
+
+.consultas-table {
+  width: 100%;
+
+  min-width: 850px;
+
+  border-collapse: collapse;
+}
+
+.consultas-table thead {
+  background: #f8fafc;
+}
+
+.consultas-table th {
+  padding: 13px 20px;
+
+  text-align: left;
+
+  color: #78909c;
+
+  font-size: 11px;
+  font-weight: 700;
+
+  text-transform: uppercase;
+
+  letter-spacing: 0.4px;
+
+  border-bottom: 1px solid #e7eef3;
+}
+
+.consultas-table td {
+  padding: 15px 20px;
+
+  color: #455a64;
+
+  font-size: 13px;
+
+  border-bottom: 1px solid #edf2f5;
+}
+
+.consultas-table tbody tr {
+  transition: background 0.2s ease;
+}
+
+.consultas-table tbody tr:hover {
+  background: #f9fbfc;
+}
+
+.consultas-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+
+/* ==========================================
+   PACIENTE
+========================================== */
+
+.consulta-paciente {
+  display: flex;
+  align-items: center;
+
+  gap: 10px;
+}
+
+.consulta-avatar {
+  width: 36px;
+  min-width: 36px;
+  height: 36px;
+
+  border-radius: 50%;
+
+  background: #e3f2fd;
+  color: #0d47a1;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-weight: 700;
+}
+
+.consulta-paciente > div:last-child {
+  display: flex;
+  flex-direction: column;
+}
+
+.consulta-paciente strong {
+  color: #263238;
+
+  font-size: 13px;
+}
+
+.consulta-paciente span {
+  color: #90a4ae;
+
+  font-size: 11px;
+
+  margin-top: 2px;
+}
+
+
+/* ==========================================
+   DATA / HORÁRIO
+========================================== */
+
+.consulta-data {
+  display: flex;
+  align-items: center;
+
+  gap: 6px;
+
+  white-space: nowrap;
+
+  color: #546e7a;
+}
+
+.consulta-data svg {
+  color: #90a4ae;
+}
+
+
+/* ==========================================
+   STATUS
+========================================== */
+
+.consulta-status {
+  display: inline-flex;
+
+  align-items: center;
+  justify-content: center;
+
+  padding: 5px 9px;
+
+  border-radius: 20px;
+
+  font-size: 11px;
+  font-weight: 600;
+
+  white-space: nowrap;
+}
+
+.consulta-status-confirmada {
+  background: #e3f2fd;
+  color: #1565c0;
+}
+
+.consulta-status-aguardando {
+  background: #fff3e0;
+  color: #ef6c00;
+}
+
+.consulta-status-concluida {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.consulta-status-cancelada {
+  background: #ffebee;
+  color: #c62828;
+}
+
+
+/* ==========================================
+   AÇÕES
+========================================== */
+
+.consulta-acoes {
+  display: flex;
+  align-items: center;
+
+  gap: 5px;
+}
+
+.consulta-action {
+  width: 32px;
+  height: 32px;
+
+  border: none;
+
+  border-radius: 6px;
+
+  background: transparent;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
+}
+
+.consulta-action.visualizar {
+  color: #1976d2;
+}
+
+.consulta-action.editar {
+  color: #546e7a;
+}
+
+.consulta-action.excluir {
+  color: #e53935;
+}
+
+.consulta-action.visualizar:hover {
+  background: #e3f2fd;
+}
+
+.consulta-action.editar:hover {
+  background: #eceff1;
+}
+
+.consulta-action.excluir:hover {
+  background: #ffebee;
+}
+
+
+/* ==========================================
+   SEM RESULTADOS
+========================================== */
+
+.consultas-sem-resultado {
+  height: 220px;
+
+  text-align: center !important;
+}
+
+.consultas-sem-resultado svg {
+  display: block;
+
+  margin: 0 auto 10px;
+
+  color: #b0bec5;
+}
+
+.consultas-sem-resultado strong {
+  display: block;
+
+  margin-bottom: 4px;
+
+  color: #546e7a;
+}
+
+.consultas-sem-resultado span {
+  color: #90a4ae;
+
+  font-size: 12px;
+}
+
+
+/* ==========================================
+   RESPONSIVO
+========================================== */
+
+@media (max-width: 1100px) {
+
+  .consultas-cards {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .consultas-lista-topo {
+    flex-direction: column;
+
+    align-items: stretch;
+  }
+
+  .consultas-filtros {
+    width: 100%;
+  }
+
+  .consultas-busca {
+    flex: 1;
+
+    width: auto;
+  }
+}
+
+
+/* ==========================================
+   MOBILE
+========================================== */
+
+@media (max-width: 700px) {
+
+  .consultas-page {
+    padding: 18px;
+  }
+
+  .consultas-page-header {
+    align-items: flex-start;
+
+    flex-direction: column;
+  }
+
+  .consultas-nova-button {
+    width: 100%;
+  }
+
+  .consultas-cards {
+    /*
+      Continua como quadradinhos em duas
+      colunas enquanto houver espaço.
+    */
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+
+    gap: 10px;
+  }
+
+  .consultas-card {
+    padding: 14px;
+
+    align-items: flex-start;
+  }
+
+  .consultas-card-icon {
+    width: 40px;
+    min-width: 40px;
+    height: 40px;
+  }
+
+  .consultas-card-info strong {
+    font-size: 21px;
+  }
+
+  .consultas-card-info small {
+    display: none;
+  }
+
+  .consultas-filtros {
+    flex-direction: column;
+  }
+
+  .consultas-busca {
+    width: 100%;
+  }
+
+  .consultas-filtros select {
+    width: 100%;
+  }
+
+}
+
+
+/* ==========================================
+   TELAS MUITO PEQUENAS
+========================================== */
+
+@media (max-width: 430px) {
+
+  .consultas-page {
+    padding: 14px;
+  }
+
+  .consultas-page-header h1 {
+    font-size: 24px;
+  }
+
+  .consultas-cards {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .consultas-card {
+    gap: 9px;
+
+    padding: 12px;
+  }
+
+  .consultas-card-icon {
+    width: 36px;
+    min-width: 36px;
+    height: 36px;
+  }
+
+  .consultas-card-icon svg {
+    width: 19px;
+    height: 19px;
+  }
+
+  .consultas-card-info span {
+    font-size: 11px;
+  }
+
+  .consultas-card-info strong {
+    font-size: 19px;
+  }
+
+  .consultas-lista-topo {
+    padding: 16px;
+  }
+
+}

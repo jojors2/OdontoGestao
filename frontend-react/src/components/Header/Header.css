@@ -1,0 +1,246 @@
+/* =========================
+   HEADER
+========================= */
+
+.header {
+  width: 100%;
+  height: 60px;
+
+  position: fixed;
+
+  top: 0;
+  left: 0;
+
+  display: flex;
+  align-items: center;
+
+  background-color: white;
+
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+
+  z-index: 2000;
+}
+
+/* =========================
+   ESQUERDA
+========================= */
+
+.header-left {
+  width: 250px;
+  min-width: 250px;
+
+  height: 100%;
+
+  display: flex;
+  align-items: center;
+
+  gap: 12px;
+
+  padding: 0 18px;
+
+  background-color: #0d47a1;
+}
+
+/* =========================
+   BOTÃO MENU
+========================= */
+
+.header-menu-button {
+  width: 40px;
+  height: 40px;
+
+  flex-shrink: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border: none;
+  border-radius: 8px;
+
+  background-color: transparent;
+
+  color: white;
+
+  cursor: pointer;
+
+  transition: background-color 0.2s ease;
+}
+
+.header-menu-button:hover {
+  background-color: rgba(255, 255, 255, 0.12);
+}
+
+/* =========================
+   LOGO
+========================= */
+
+.header-logo {
+  min-width: 0;
+
+  display: flex;
+  align-items: center;
+
+  overflow: hidden;
+}
+
+.header-logo h2 {
+  color: white;
+
+  font-size: 20px;
+
+  white-space: nowrap;
+}
+
+/* =========================
+   DIREITA
+========================= */
+
+.header-right {
+  flex: 1;
+
+  min-width: 0;
+  height: 100%;
+
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+
+  padding: 0 25px;
+
+  background-color: white;
+}
+
+/* =========================
+   USUÁRIO
+========================= */
+
+.header-user {
+  display: flex;
+  align-items: center;
+
+  gap: 12px;
+}
+
+.user-info {
+  display: flex;
+  flex-direction: column;
+
+  text-align: right;
+
+  white-space: nowrap;
+}
+
+.user-info strong {
+  color: #263238;
+
+  font-size: 14px;
+}
+
+.user-info span {
+  color: #607d8b;
+
+  font-size: 12px;
+}
+
+/* =========================
+   AVATAR
+========================= */
+
+.user-avatar {
+  width: 38px;
+  height: 38px;
+
+  min-width: 38px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 50%;
+
+  background-color: #1e88e5;
+
+  color: white;
+
+  font-size: 14px;
+  font-weight: bold;
+}
+
+/* =========================
+   TABLET / RESPONSIVO
+========================= */
+
+@media (max-width: 768px) {
+  .header-left {
+    width: auto;
+    min-width: 0;
+
+    flex: 1;
+
+    padding: 0 14px;
+  }
+
+  .header-right {
+    flex: 0 0 auto;
+
+    padding: 0 14px;
+  }
+
+  .header-logo h2 {
+    font-size: 18px;
+  }
+
+  .header-user {
+    gap: 8px;
+  }
+
+  .user-info strong {
+    font-size: 12px;
+  }
+
+  .user-info span {
+    font-size: 10px;
+  }
+}
+
+/* =========================
+   CELULAR PEQUENO
+========================= */
+
+@media (max-width: 480px) {
+  .header-left {
+    padding: 0 8px;
+    gap: 6px;
+  }
+
+  .header-right {
+    padding: 0 8px;
+  }
+
+  .header-menu-button {
+    width: 36px;
+    height: 36px;
+  }
+
+  .header-logo h2 {
+    font-size: 16px;
+  }
+
+  .user-info strong {
+    font-size: 11px;
+  }
+
+  .user-info span {
+    display: none;
+  }
+
+  .user-avatar {
+    width: 34px;
+    height: 34px;
+
+    min-width: 34px;
+
+    font-size: 12px;
+  }
+}

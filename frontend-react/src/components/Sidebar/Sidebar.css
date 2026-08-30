@@ -1,0 +1,203 @@
+/* =========================
+   SIDEBAR
+========================= */
+
+.sidebar {
+  width: 100%;
+  min-width: 0;
+
+  height: calc(100vh - 60px);
+
+  position: sticky;
+
+  top: 60px;
+
+  align-self: start;
+
+  display: flex;
+  flex-direction: column;
+
+  padding: 20px 12px;
+
+  background-color: #0d47a1;
+
+  border-right: 1px solid #a0cbee;
+
+  z-index: 1000;
+}
+
+/* =========================
+   NAVEGAÇÃO
+========================= */
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+
+  gap: 6px;
+
+  padding-top: 35px;
+
+  flex: 1;
+}
+
+/* =========================
+   ITENS
+========================= */
+
+.sidebar-item {
+  width: 100%;
+
+  min-height: 46px;
+
+  display: flex;
+  align-items: center;
+
+  gap: 12px;
+
+  padding: 13px 15px;
+
+  border: none;
+  border-radius: 8px;
+
+  background-color: transparent;
+
+  color: white;
+
+  font-size: 15px;
+
+  text-align: left;
+
+  cursor: pointer;
+
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.sidebar-item:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+}
+
+.sidebar-item.active {
+  background-color: #e3f2fd;
+
+  color: #0d47a1;
+
+  font-weight: bold;
+}
+
+.sidebar-item svg {
+  min-width: 20px;
+
+  flex-shrink: 0;
+}
+
+.sidebar-label {
+  white-space: nowrap;
+}
+
+/* =========================
+   MINIMIZADA
+========================= */
+
+.sidebar-minimized .sidebar-label {
+  display: none;
+}
+
+.sidebar-minimized .sidebar-item {
+  justify-content: center;
+
+  gap: 0;
+
+  padding-left: 0;
+  padding-right: 0;
+}
+
+
+/* =========================
+   SAIR
+========================= */
+
+.sidebar-exit {
+  margin-top: auto;
+}
+
+/* =========================
+   OVERLAY
+========================= */
+
+.sidebar-overlay {
+  display: none;
+}
+
+/* =========================
+   RESPONSIVO
+========================= */
+
+@media (max-width: 768px) {
+  .sidebar {
+    width: 250px;
+
+    height: calc(100vh - 60px);
+
+    position: fixed;
+
+    top: 60px;
+    left: 0;
+
+    transform: translateX(-100%);
+
+    transition: transform 0.3s ease;
+
+    box-shadow: 4px 0 15px rgba(0, 0, 0, 0.15);
+
+    z-index: 1200;
+  }
+
+  .sidebar-mobile-open {
+    transform: translateX(0);
+  }
+
+  /*
+     Continua sendo o MESMO sidebar.
+     Só garantimos que no celular ele
+     abra completo.
+  */
+
+  .sidebar-minimized {
+    width: 250px;
+  }
+
+  .sidebar-minimized .sidebar-label {
+    display: block;
+  }
+
+  .sidebar-minimized .sidebar-item {
+    justify-content: flex-start;
+
+    gap: 12px;
+
+    padding: 13px 15px;
+  }
+
+  .sidebar-toggle {
+    display: none;
+  }
+
+  .sidebar-overlay {
+    display: block;
+
+    position: fixed;
+
+    top: 60px;
+    left: 0;
+
+    width: 100%;
+    height: calc(100vh - 60px);
+
+    background-color: rgba(0, 0, 0, 0.35);
+
+    z-index: 1100;
+  }
+}

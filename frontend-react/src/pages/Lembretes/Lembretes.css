@@ -1,0 +1,989 @@
+/* ========================================
+   LEMBRETES
+======================================== */
+
+.lembretes-page {
+  width: 100%;
+
+  min-height: calc(100vh - 60px);
+
+  padding: 25px 20px 30px;
+
+  background-color: #eaf4fc;
+}
+
+
+/* ========================================
+   CABEÇALHO
+======================================== */
+
+.lembretes-page-header {
+  display: flex;
+
+  justify-content: space-between;
+  align-items: center;
+
+  gap: 20px;
+
+  margin-bottom: 25px;
+}
+
+.lembretes-page-title h1 {
+  color: #0d47a1;
+
+  font-size: 28px;
+
+  margin-bottom: 4px;
+}
+
+.lembretes-page-title p {
+  color: #607d8b;
+
+  font-size: 14px;
+}
+
+.lembretes-primary-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 8px;
+
+  min-height: 42px;
+
+  padding: 0 18px;
+
+  border: none;
+  border-radius: 10px;
+
+  background: #0d47a1;
+  color: #ffffff;
+
+  font-size: 14px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  box-shadow: 0 3px 8px rgba(13, 71, 161, 0.18);
+
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.lembretes-primary-button:hover {
+  background: #005eff;
+
+  transform: translateY(-1px);
+
+  box-shadow: 0 5px 12px rgba(13, 71, 161, 0.22);
+}
+
+
+/* ========================================
+   CARDS DE RESUMO
+======================================== */
+
+.lembretes-stats {
+  display: grid;
+
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+
+  gap: 18px;
+
+  margin-bottom: 24px;
+}
+
+.lembretes-stat-card {
+  display: flex;
+  align-items: center;
+
+  gap: 14px;
+
+  min-width: 0;
+
+  padding: 20px;
+
+  background: #ffffff;
+
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+
+  box-shadow: 0 3px 10px rgba(15, 23, 42, 0.05);
+}
+
+.lembretes-stat-icon {
+  width: 46px;
+  height: 46px;
+
+  flex-shrink: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 12px;
+}
+
+.lembretes-icon-blue {
+  background: #e3f2fd;
+  color: #1565c0;
+}
+
+.lembretes-icon-orange {
+  background: #fff3e0;
+  color: #ef6c00;
+}
+
+.lembretes-icon-green {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.lembretes-icon-red {
+  background: #ffebee;
+  color: #c62828;
+}
+
+.lembretes-stat-info {
+  min-width: 0;
+
+  display: flex;
+  flex-direction: column;
+}
+
+.lembretes-stat-info span {
+  margin-bottom: 4px;
+
+  color: #64748b;
+
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.lembretes-stat-info strong {
+  color: #1e293b;
+
+  font-size: 24px;
+  font-weight: 700;
+}
+
+
+/* ========================================
+   PAINEL
+======================================== */
+
+.lembretes-panel {
+  width: 100%;
+
+  overflow: hidden;
+
+  background: #ffffff;
+
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+
+  box-shadow: 0 3px 10px rgba(15, 23, 42, 0.05);
+}
+
+.lembretes-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  gap: 20px;
+
+  padding: 20px 22px;
+
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.lembretes-panel-header h2 {
+  margin: 0 0 4px;
+
+  color: #1e293b;
+
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.lembretes-panel-header p {
+  margin: 0;
+
+  color: #64748b;
+
+  font-size: 13px;
+}
+
+.lembretes-total {
+  flex-shrink: 0;
+
+  padding: 6px 10px;
+
+  border-radius: 20px;
+
+  background: #eaf4fc;
+  color: #0d47a1;
+
+  font-size: 12px;
+  font-weight: 600;
+}
+
+
+/* ========================================
+   BUSCA + FILTROS
+======================================== */
+
+.lembretes-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  gap: 16px;
+
+  padding: 18px 22px;
+
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.lembretes-search {
+  width: 100%;
+  max-width: 430px;
+
+  min-width: 0;
+
+  display: flex;
+  align-items: center;
+
+  gap: 9px;
+
+  padding: 0 13px;
+
+  height: 42px;
+
+  border: 1px solid #cbd5e1;
+  border-radius: 9px;
+
+  color: #94a3b8;
+
+  background: #ffffff;
+
+  transition: border-color 0.2s ease;
+}
+
+.lembretes-search:focus-within {
+  border-color: #1e88e5;
+
+  box-shadow: 0 0 0 3px rgba(30, 136, 229, 0.08);
+}
+
+.lembretes-search input {
+  width: 100%;
+  min-width: 0;
+
+  border: none;
+  outline: none;
+
+  background: transparent;
+
+  color: #1e293b;
+
+  font-size: 14px;
+}
+
+.lembretes-search input::placeholder {
+  color: #94a3b8;
+}
+
+.lembretes-filter {
+  display: flex;
+
+  gap: 6px;
+
+  padding: 4px;
+
+  border-radius: 9px;
+
+  background: #f1f5f9;
+}
+
+.lembretes-filter button {
+  padding: 7px 12px;
+
+  border: none;
+  border-radius: 7px;
+
+  background: transparent;
+
+  color: #64748b;
+
+  font-size: 13px;
+  font-weight: 500;
+
+  cursor: pointer;
+
+  transition: all 0.2s ease;
+}
+
+.lembretes-filter button:hover {
+  color: #0d47a1;
+}
+
+.lembretes-filter .lembretes-filter-active {
+  background: #ffffff;
+
+  color: #0d47a1;
+
+  font-weight: 600;
+
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.09);
+}
+
+
+/* ========================================
+   LISTA
+======================================== */
+
+.lembretes-list {
+  width: 100%;
+}
+
+.lembrete-item {
+  width: 100%;
+
+  display: flex;
+  align-items: flex-start;
+
+  gap: 15px;
+
+  padding: 19px 22px;
+
+  border-bottom: 1px solid #edf2f7;
+
+  transition: background 0.2s ease;
+}
+
+.lembrete-item:last-child {
+  border-bottom: none;
+}
+
+.lembrete-item:hover {
+  background: #f8fbfe;
+}
+
+.lembrete-check {
+  flex-shrink: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 0;
+  margin-top: 2px;
+
+  border: none;
+
+  background: transparent;
+
+  color: #94a3b8;
+
+  cursor: pointer;
+}
+
+.lembrete-check:hover {
+  color: #1e88e5;
+}
+
+.lembrete-check-active {
+  color: #2e7d32;
+}
+
+.lembrete-main {
+  flex: 1;
+
+  min-width: 0;
+}
+
+.lembrete-main-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+
+  gap: 15px;
+}
+
+.lembrete-title-area {
+  min-width: 0;
+
+  flex: 1;
+}
+
+.lembrete-title-line {
+  display: flex;
+  align-items: center;
+
+  flex-wrap: wrap;
+
+  gap: 9px;
+
+  margin-bottom: 5px;
+}
+
+.lembrete-title-line h3 {
+  margin: 0;
+
+  color: #1e293b;
+
+  font-size: 15px;
+  font-weight: 650;
+}
+
+.lembrete-title-area p {
+  margin: 0;
+
+  color: #64748b;
+
+  font-size: 13px;
+
+  line-height: 1.5;
+}
+
+
+/* ========================================
+   PRIORIDADE
+======================================== */
+
+.lembrete-priority {
+  display: inline-flex;
+  align-items: center;
+
+  padding: 4px 9px;
+
+  border-radius: 20px;
+
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.lembrete-priority-alta {
+  background: #ffebee;
+  color: #c62828;
+}
+
+.lembrete-priority-média {
+  background: #fff3e0;
+  color: #ef6c00;
+}
+
+.lembrete-priority-baixa {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+
+/* ========================================
+   INFORMAÇÕES
+======================================== */
+
+.lembrete-details {
+  display: flex;
+  align-items: center;
+
+  flex-wrap: wrap;
+
+  gap: 18px;
+
+  margin-top: 12px;
+}
+
+.lembrete-detail {
+  display: flex;
+  align-items: center;
+
+  gap: 6px;
+
+  color: #64748b;
+
+  font-size: 12px;
+}
+
+.lembrete-detail svg {
+  color: #78909c;
+}
+
+
+/* ========================================
+   AÇÕES
+======================================== */
+
+.lembrete-actions {
+  flex-shrink: 0;
+
+  display: flex;
+  align-items: center;
+
+  gap: 4px;
+}
+
+.lembrete-action-button {
+  width: 34px;
+  height: 34px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 0;
+
+  border: none;
+  border-radius: 8px;
+
+  background: transparent;
+
+  color: #64748b;
+
+  cursor: pointer;
+
+  transition: all 0.2s ease;
+}
+
+.lembrete-action-button:hover {
+  background: #e3f2fd;
+  color: #1565c0;
+}
+
+.lembrete-delete-button:hover {
+  background: #ffebee;
+  color: #c62828;
+}
+
+
+/* ========================================
+   CONCLUÍDO
+======================================== */
+
+.lembrete-item-concluido {
+  background: #fafafa;
+
+  opacity: 0.68;
+}
+
+.lembrete-item-concluido .lembrete-title-line h3,
+.lembrete-item-concluido .lembrete-title-area p {
+  text-decoration: line-through;
+}
+
+
+/* ========================================
+   VAZIO
+======================================== */
+
+.lembretes-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  text-align: center;
+
+  padding: 60px 20px;
+}
+
+.lembretes-empty-icon {
+  width: 58px;
+  height: 58px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  margin-bottom: 14px;
+
+  border-radius: 50%;
+
+  background: #eaf4fc;
+  color: #0d47a1;
+}
+
+.lembretes-empty h3 {
+  margin: 0 0 6px;
+
+  color: #334155;
+
+  font-size: 16px;
+}
+
+.lembretes-empty p {
+  max-width: 400px;
+
+  margin: 0;
+
+  color: #94a3b8;
+
+  font-size: 13px;
+}
+
+
+/* ========================================
+   MODAL
+======================================== */
+
+.lembretes-modal-overlay {
+  position: fixed;
+
+  inset: 0;
+
+  z-index: 3000;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 20px;
+
+  background: rgba(15, 23, 42, 0.45);
+}
+
+.lembretes-modal {
+  width: 100%;
+  max-width: 560px;
+
+  max-height: calc(100vh - 40px);
+
+  overflow-y: auto;
+
+  background: #ffffff;
+
+  border-radius: 14px;
+
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.2);
+}
+
+.lembretes-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+
+  gap: 20px;
+
+  padding: 21px 22px;
+
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.lembretes-modal-header h2 {
+  margin: 0 0 4px;
+
+  color: #1e293b;
+
+  font-size: 19px;
+}
+
+.lembretes-modal-header p {
+  margin: 0;
+
+  color: #64748b;
+
+  font-size: 13px;
+}
+
+.lembretes-modal-close {
+  flex-shrink: 0;
+
+  width: 34px;
+  height: 34px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border: none;
+  border-radius: 8px;
+
+  background: transparent;
+
+  color: #64748b;
+
+  cursor: pointer;
+}
+
+.lembretes-modal-close:hover {
+  background: #f1f5f9;
+
+  color: #1e293b;
+}
+
+
+/* ========================================
+   FORMULÁRIO
+======================================== */
+
+.lembretes-form {
+  padding: 22px;
+}
+
+.lembretes-form-row {
+  display: grid;
+
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+
+  gap: 15px;
+
+  margin-bottom: 16px;
+}
+
+.lembretes-form-group {
+  display: flex;
+  flex-direction: column;
+
+  gap: 7px;
+}
+
+.lembretes-form-full {
+  margin-bottom: 16px;
+}
+
+.lembretes-form-group label {
+  color: #334155;
+
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.lembretes-form-group label span {
+  color: #d32f2f;
+}
+
+.lembretes-form-group input,
+.lembretes-form-group select,
+.lembretes-form-group textarea {
+  width: 100%;
+
+  padding: 10px 12px;
+
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+
+  outline: none;
+
+  background: #ffffff;
+
+  color: #1e293b;
+
+  font-family: inherit;
+  font-size: 14px;
+
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.lembretes-form-group input,
+.lembretes-form-group select {
+  height: 42px;
+}
+
+.lembretes-form-group textarea {
+  min-height: 95px;
+
+  resize: vertical;
+}
+
+.lembretes-form-group input:focus,
+.lembretes-form-group select:focus,
+.lembretes-form-group textarea:focus {
+  border-color: #1e88e5;
+
+  box-shadow: 0 0 0 3px rgba(30, 136, 229, 0.08);
+}
+
+
+/* ========================================
+   FOOTER DO MODAL
+======================================== */
+
+.lembretes-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+
+  gap: 10px;
+
+  padding-top: 4px;
+}
+
+.lembretes-cancel-button,
+.lembretes-save-button {
+  min-height: 40px;
+
+  padding: 0 17px;
+
+  border-radius: 8px;
+
+  font-size: 13px;
+  font-weight: 600;
+
+  cursor: pointer;
+}
+
+.lembretes-cancel-button {
+  border: 1px solid #cbd5e1;
+
+  background: #ffffff;
+
+  color: #475569;
+}
+
+.lembretes-cancel-button:hover {
+  background: #f8fafc;
+}
+
+.lembretes-save-button {
+  border: none;
+
+  background: #0d47a1;
+
+  color: #ffffff;
+}
+
+.lembretes-save-button:hover {
+  background: #1565c0;
+}
+
+
+/* ========================================
+   TABLET
+======================================== */
+
+@media (max-width: 1100px) {
+  .lembretes-page {
+    padding: 22px;
+  }
+
+  .lembretes-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+
+/* ========================================
+   MOBILE
+======================================== */
+
+@media (max-width: 768px) {
+  .lembretes-page {
+    padding: 18px 14px;
+  }
+
+  .lembretes-page-header {
+    flex-direction: column;
+
+    align-items: stretch;
+  }
+
+  .lembretes-primary-button {
+    width: 100%;
+  }
+
+  .lembretes-panel-header {
+    align-items: flex-start;
+  }
+
+  .lembretes-toolbar {
+    flex-direction: column;
+
+    align-items: stretch;
+  }
+
+  .lembretes-search {
+    max-width: none;
+  }
+
+  .lembretes-filter {
+    width: 100%;
+  }
+
+  .lembretes-filter button {
+    flex: 1;
+  }
+
+  .lembrete-item {
+    padding: 17px;
+  }
+
+  .lembrete-main-header {
+    gap: 8px;
+  }
+
+  .lembrete-details {
+    gap: 10px 15px;
+  }
+}
+
+
+/* ========================================
+   MOBILE PEQUENO
+======================================== */
+
+@media (max-width: 520px) {
+  .lembretes-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .lembretes-page-title h1 {
+    font-size: 24px;
+  }
+
+  .lembretes-panel-header {
+    flex-direction: column;
+
+    gap: 10px;
+  }
+
+  .lembretes-total {
+    align-self: flex-start;
+  }
+
+  .lembretes-filter {
+    overflow-x: auto;
+  }
+
+  .lembrete-item {
+    gap: 10px;
+  }
+
+  .lembrete-main-header {
+    flex-direction: column;
+  }
+
+  .lembrete-actions {
+    align-self: flex-end;
+  }
+
+  .lembrete-details {
+    flex-direction: column;
+    align-items: flex-start;
+
+    gap: 7px;
+  }
+
+  .lembretes-form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .lembretes-modal-overlay {
+    padding: 10px;
+  }
+
+  .lembretes-modal {
+    max-height: calc(100vh - 20px);
+  }
+
+  .lembretes-modal-footer {
+    flex-direction: column-reverse;
+  }
+
+  .lembretes-cancel-button,
+  .lembretes-save-button {
+    width: 100%;
+  }
+}

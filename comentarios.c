@@ -19,6 +19,9 @@ code .
 tema dark horizon
 tema bluloco dark theme
 
+fazer isso no outro pc dps:
+npm install react-router-dom
+
 
 
 

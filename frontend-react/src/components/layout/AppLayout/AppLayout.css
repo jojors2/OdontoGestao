@@ -1,0 +1,60 @@
+/* =========================
+   LAYOUT
+========================= */
+
+.app-layout {
+  width: 100%;
+  min-height: 100vh;
+}
+
+/* =========================
+   SIDEBAR + CONTEÚDO
+========================= */
+
+.app-body {
+  display: grid;
+
+  grid-template-columns:
+    250px minmax(0, 1fr);
+
+  width: 100%;
+
+  min-height: 100vh;
+
+  padding-top: 60px;
+
+  transition:
+    grid-template-columns 0.3s ease;
+}
+
+/* Quando a sidebar minimiza */
+
+.app-body.sidebar-is-minimized {
+  grid-template-columns:
+    80px minmax(0, 1fr);
+}
+
+
+
+/* =========================
+   RESPONSIVO
+========================= */
+
+@media (max-width: 768px) {
+  .app-body,
+  .app-body.sidebar-is-minimized {
+    display: block;
+
+    width: 100%;
+
+    padding-top: 60px;
+  }
+
+  .main-content {
+    width: 100%;
+
+    min-width: 0;
+
+    margin: 0;
+  }
+}
