@@ -1,0 +1,90 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Usuario {
+  id        Int      @id @default(autoincrement())
+  nome      String
+  email     String   @unique
+  senha     String
+  perfil    String   @default("RECEPCIONISTA") // ADMIN, DENTISTA, RECEPCIONISTA
+  cro       String?
+  criadoEm  DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+}
+
+model Paciente {
+  id             Int         @id @default(autoincrement())
+  nome           String
+  telefone       String
+  email          String?
+  nascimento     String?
+  status         String      @default("Ativo") // Ativo, Inativo
+  consultas      Consulta[]
+  orcamentos     Orcamento[]
+  criadoEm       DateTime    @default(now())
+  atualizadoEm   DateTime    @updatedAt
+}
+
+model Consulta {
+  id           Int      @id @default(autoincrement())
+  pacienteId   Int
+  paciente     Paciente @relation(fields: [pacienteId], references: [id], onDelete: Cascade)
+  data         String   // Formato YYYY-MM-DD
+  horario      String   // Formato HH:mm
+  duracao      String?  @default("30")
+  procedimento String
+  observacoes  String?
+  status       String   @default("Agendada") // Agendada, Confirmada, Em atendimento, Concluída, Cancelada, Paciente não compareceu
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+}
+
+model Orcamento {
+  id           Int      @id @default(autoincrement())
+  pacienteId   Int
+  paciente     Paciente @relation(fields: [pacienteId], references: [id], onDelete: Cascade)
+  procedimento String
+  valor        Float
+  data         String
+  status       String   @default("Pendente") // Pendente, Aprovado, Recusado
+  observacoes  String?
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+}
+
+model Lembrete {
+  id         Int      @id @default(autoincrement())
+  titulo     String
+  descricao  String?
+  paciente   String?
+  data       String
+  hora       String?
+  prioridade String   @default("Média") // Baixa, Média, Alta
+  concluido  Boolean  @default(false)
+  criadoEm   DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+}
+
+model Configuracao {
+  id                  Int      @id @default(autoincrement())
+  nomeClinica         String   @default("OdontoGestão")
+  telefoneClinica     String?
+  emailClinica        String?
+  enderecoClinica     String?
+  profissionalNome    String?
+  cro                 String?
+  especialidade       String?
+  agendaInicio        String   @default("08:00")
+  agendaFim           String   @default("18:00")
+  duracaoConsulta     String   @default("30")
+  lembretesAtivos     Boolean  @default(true)
+  confirmacaoConsulta Boolean  @default(true)
+  atualizadoEm        DateTime @updatedAt
+}
