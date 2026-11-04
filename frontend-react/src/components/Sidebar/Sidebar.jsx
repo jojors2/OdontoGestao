@@ -36,6 +36,7 @@ function Sidebar({
 
   function sair() {
     localStorage.removeItem("usuarioLogado");
+    localStorage.removeItem("usuario");
 
     navigate("/", {
       replace: true,

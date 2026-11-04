@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
 import "./Login.css";
@@ -9,9 +9,18 @@ function Login() {
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [erro, setErro] = useState("");
+  const [carregando, setCarregando] = useState(false);
   const [mostrarSenha, setMostrarSenha] = useState(false);
 
-  function fazerLogin(event) {
+  // Se já estiver logado, redireciona direto para o dashboard
+  useEffect(() => {
+    const usuarioLogado = localStorage.getItem("usuarioLogado") === "true";
+    if (usuarioLogado) {
+      navigate("/dashboard", { replace: true });
+    }
+  }, [navigate]);
+
+  async function fazerLogin(event) {
     event.preventDefault();
 
     if (!email || !senha) {
@@ -20,11 +29,35 @@ function Login() {
     }
 
     setErro("");
+    setCarregando(true);
 
-    // Temporário enquanto não temos backend
-    localStorage.setItem("usuarioLogado", "true");
+    try {
+      const resposta = await fetch("http://localhost:3001/api/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, senha }),
+      });
 
-    navigate("/dashboard", { replace: true });
+      const dados = await resposta.json();
+
+      if (!resposta.ok) {
+        setErro(dados.erro || "E-mail ou senha inválidos.");
+        return;
+      }
+
+      // Salva os dados do usuário autenticado no localStorage
+      localStorage.setItem("usuarioLogado", "true");
+      localStorage.setItem("usuario", JSON.stringify(dados));
+
+      navigate("/dashboard", { replace: true });
+    } catch (err) {
+      console.error("Erro de conexão:", err);
+      setErro("Não foi possível conectar ao servidor. Verifique se o backend está ligado na porta 3001.");
+    } finally {
+      setCarregando(false);
+    }
   }
 
   return (
@@ -57,6 +90,8 @@ function Login() {
               onChange={(event) =>
                 setEmail(event.target.value)
               }
+              disabled={carregando}
+              required
             />
           </div>
 
@@ -78,6 +113,8 @@ function Login() {
                 onChange={(event) =>
                   setSenha(event.target.value)
                 }
+                disabled={carregando}
+                required
               />
 
               <button
@@ -111,8 +148,9 @@ function Login() {
           <button
             className="login-button"
             type="submit"
+            disabled={carregando}
           >
-            Entrar
+            {carregando ? "Entrando..." : "Entrar"}
           </button>
         </form>
       </div>
