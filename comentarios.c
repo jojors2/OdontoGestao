@@ -22,6 +22,7 @@ tema bluloco dark theme
 fazer isso no outro pc dps:
 npm install react-router-dom
 
+senha supabase *Joelle2
 
 
 
