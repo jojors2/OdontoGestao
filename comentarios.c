@@ -24,6 +24,7 @@ npm install react-router-dom
 
 senha supabase 9n1XOG8fSq9LvLDm
 
+http://localhost:5555
 
 
 

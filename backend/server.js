@@ -1,17 +1,91 @@
 const express = require("express");
 const cors = require("cors");
+const cookieParser = require("cookie-parser");
+const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
 const { PrismaClient } = require("@prisma/client");
 require("dotenv").config();
 
 const app = express();
 const prisma = new PrismaClient();
 
+// ==========================================
+// MIDDLEWARE DE AUTENTICAÇÃO
+// ==========================================
+
+async function autenticarUsuario(req, res, next) {
+  try {
+    // Recupera o token armazenado no cookie
+    const token = req.cookies.odontogestao_token;
+
+    if (!token) {
+      return res.status(401).json({
+        erro: "Você precisa fazer login para acessar esta área.",
+      });
+    }
+
+    // Verifica se o token é válido
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    // Busca o usuário no banco
+    const usuario = await prisma.usuario.findUnique({
+      where: {
+        id: Number(decoded.sub),
+      },
+      select: {
+        id: true,
+        nome: true,
+        email: true,
+        perfil: true,
+        cro: true,
+      },
+    });
+
+    if (!usuario) {
+      return res.status(401).json({
+        erro: "Usuário não encontrado.",
+      });
+    }
+
+    // Disponibiliza os dados para as próximas rotas
+    req.usuario = usuario;
+
+    next();
+
+  } catch (error) {
+    return res.status(401).json({
+      erro: "Sessão inválida ou expirada. Faça login novamente.",
+    });
+  }
+}
+
+// ==========================================
+// MIDDLEWARE DE AUTORIZAÇÃO
+// ==========================================
+
+function permitirPerfis(...perfisPermitidos) {
+  return (req, res, next) => {
+    if (!perfisPermitidos.includes(req.usuario.perfil)) {
+      return res.status(403).json({
+        erro: "Você não tem permissão para realizar esta ação.",
+      });
+    }
+
+    next();
+  };
+}
+
 // Permite que o frontend converse com este backend
-app.use(cors());
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+    credentials: true 
+  })
+);
 
 // Permite que o Express receba dados enviados no formato JSON
 app.use(express.json());
-
+app.use(cookieParser());
 // ==========================================
 // ROTA DE STATUS / TESTE
 // ==========================================
@@ -26,68 +100,164 @@ app.post("/api/login", async (req, res) => {
   try {
     const { email, senha } = req.body;
 
+    // Verifica se os campos foram preenchidos
     if (!email || !senha) {
-      return res.status(400).json({ erro: "E-mail e senha são obrigatórios." });
+      return res.status(400).json({
+        erro: "E-mail e senha são obrigatórios.",
+      });
     }
 
+    // Procura o usuário pelo e-mail
     const usuario = await prisma.usuario.findUnique({
-      where: { email: email.toLowerCase().trim() },
+      where: {
+        email: email.toLowerCase().trim(),
+      },
     });
 
-    if (!usuario || usuario.senha !== senha) {
-      return res.status(401).json({ erro: "E-mail ou senha incorretos." });
+    if (!usuario) {
+      return res.status(401).json({
+        erro: "E-mail ou senha incorretos.",
+      });
     }
 
-    res.json({
+    // Verifica se a senha já está criptografada com bcrypt
+    const senhaJaCriptografada = /^\$2[aby]\$/.test(usuario.senha);
+
+    let senhaValida = false;
+
+    if (senhaJaCriptografada) {
+      senhaValida = await bcrypt.compare(senha, usuario.senha);
+    } else {
+      // Compatibilidade temporária com senhas antigas
+      senhaValida = usuario.senha === senha;
+
+      // Se a senha antiga estiver correta, atualiza para hash
+      if (senhaValida) {
+        const senhaHash = await bcrypt.hash(senha, 12);
+
+        await prisma.usuario.update({
+          where: { id: usuario.id },
+          data: { senha: senhaHash },
+        });
+      }
+    }
+
+    if (!senhaValida) {
+      return res.status(401).json({
+        erro: "E-mail ou senha incorretos.",
+      });
+    }
+
+    // Gera o token de autenticação
+    const token = jwt.sign(
+      {
+        perfil: usuario.perfil,
+      },
+      process.env.JWT_SECRET,
+      {
+        subject: String(usuario.id),
+        expiresIn: "8h",
+      }
+    );
+
+    // Guarda o token em um cookie protegido
+    res.cookie("odontogestao_token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 8 * 60 * 60 * 1000,
+    });
+
+    // Retorna os dados do usuário, sem a senha
+    return res.json({
       id: usuario.id,
       nome: usuario.nome,
       email: usuario.email,
       perfil: usuario.perfil,
       cro: usuario.cro,
     });
+
   } catch (error) {
     console.error("Erro no login:", error);
-    res.status(500).json({ erro: "Erro interno no servidor ao tentar logar." });
+
+    return res.status(500).json({
+      erro: "Erro interno no servidor ao tentar fazer login.",
+    });
   }
 });
 
-app.post("/api/usuarios", async (req, res) => {
-  try {
-    const { nome, email, senha, perfil, cro } = req.body;
+app.post("/api/logout", (req, res) => {
+  res.clearCookie("odontogestao_token", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+  });
 
-    if (!nome || !email || !senha) {
-      return res.status(400).json({ erro: "Nome, e-mail e senha são obrigatórios." });
-    }
-
-    const usuarioExistente = await prisma.usuario.findUnique({
-      where: { email: email.toLowerCase().trim() },
-    });
-
-    if (usuarioExistente) {
-      return res.status(400).json({ erro: "Este e-mail já está cadastrado." });
-    }
-
-    const novoUsuario = await prisma.usuario.create({
-      data: {
-        nome,
-        email: email.toLowerCase().trim(),
-        senha,
-        perfil: perfil || "RECEPCIONISTA",
-        cro: cro || null,
-      },
-    });
-
-    res.status(201).json({
-      id: novoUsuario.id,
-      nome: novoUsuario.nome,
-      email: novoUsuario.email,
-      perfil: novoUsuario.perfil,
-    });
-  } catch (error) {
-    console.error("Erro ao criar usuário:", error);
-    res.status(500).json({ erro: "Erro ao cadastrar usuário." });
-  }
+  return res.json({
+    mensagem: "Logout realizado com sucesso.",
+  });
 });
+
+app.post(
+  "/api/usuarios",
+  autenticarUsuario,
+  permitirPerfis("ADMIN"),
+  async (req, res) => {
+    try {
+      const { nome, email, senha, perfil, cro } = req.body;
+
+      if (!nome || !email || !senha) {
+        return res.status(400).json({
+          erro: "Nome, e-mail e senha são obrigatórios.",
+        });
+      }
+
+      if (senha.length < 8) {
+        return res.status(400).json({
+          erro: "A senha deve ter pelo menos 8 caracteres.",
+        });
+      }
+
+      const emailNormalizado = email.toLowerCase().trim();
+
+      const usuarioExistente = await prisma.usuario.findUnique({
+        where: { email: emailNormalizado },
+      });
+
+      if (usuarioExistente) {
+        return res.status(400).json({
+          erro: "Este e-mail já está cadastrado.",
+        });
+      }
+
+      // Criptografa a senha antes de salvar
+      const senhaHash = await bcrypt.hash(senha, 12);
+
+      const novoUsuario = await prisma.usuario.create({
+        data: {
+          nome,
+          email: emailNormalizado,
+          senha: senhaHash,
+          perfil: perfil || "RECEPCIONISTA",
+          cro: cro || null,
+        },
+      });
+
+      return res.status(201).json({
+        id: novoUsuario.id,
+        nome: novoUsuario.nome,
+        email: novoUsuario.email,
+        perfil: novoUsuario.perfil,
+      });
+    } catch (error) {
+      console.error("Erro ao criar usuário:", error);
+
+      return res.status(500).json({
+        erro: "Erro ao cadastrar usuário.",
+      });
+    }
+  }
+);
 
 // ==========================================
 // ROTAS DE PACIENTES (CRUD)
@@ -561,19 +731,12 @@ app.delete("/api/lembretes/:id", async (req, res) => {
 // ==========================================
 app.get("/api/configuracoes", async (req, res) => {
   try {
-    let config = await prisma.configuracao.findFirst();
+    const config = await prisma.configuracao.findFirst();
+
     if (!config) {
-      config = await prisma.configuracao.create({
-        data: {
-          nomeClinica: "OdontoGestão",
-          agendaInicio: "08:00",
-          agendaFim: "18:00",
-          duracaoConsulta: "30",
-          lembretesAtivos: true,
-          confirmacaoConsulta: true,
-        },
-      });
+      return res.json(null);
     }
+
     res.json(config);
   } catch (error) {
     console.error("Erro ao buscar configurações:", error);
@@ -663,152 +826,7 @@ app.get("/api/dashboard", async (req, res) => {
   }
 });
 
-// ==========================================
-// SEED AUTOMÁTICO DE DADOS INICIAIS
-// ==========================================
-async function inicializarDadosPadrao() {
-  try {
-    const totalUsuarios = await prisma.usuario.count();
-    if (totalUsuarios === 0) {
-      await prisma.usuario.create({
-        data: {
-          nome: "Administrador",
-          email: "admin@odontogestao.com",
-          senha: "admin",
-          perfil: "ADMIN",
-        },
-      });
-      console.log("✔ Usuário inicial criado: admin@odontogestao.com (senha: admin)");
-    }
 
-    const totalConfig = await prisma.configuracao.count();
-    if (totalConfig === 0) {
-      await prisma.configuracao.create({
-        data: {
-          nomeClinica: "OdontoGestão",
-          profissionalNome: "Dr. João Silva",
-          cro: "CRO-SP 123456",
-          especialidade: "Clínico Geral & Ortodontia",
-          telefoneClinica: "(11) 98888-7777",
-          emailClinica: "contato@odontogestao.com",
-          enderecoClinica: "Av. Paulista, 1000 - São Paulo, SP",
-          agendaInicio: "08:00",
-          agendaFim: "18:00",
-          duracaoConsulta: "30",
-        },
-      });
-      console.log("✔ Configuração inicial da clínica criada.");
-    }
-
-    const totalPacientes = await prisma.paciente.count();
-    if (totalPacientes === 0) {
-      const hoje = new Date().toISOString().slice(0, 10);
-
-      const p1 = await prisma.paciente.create({
-        data: {
-          nome: "Mariana Silva",
-          telefone: "(11) 98765-4321",
-          email: "mariana.silva@email.com",
-          nascimento: "1992-05-14",
-          status: "Ativo",
-        },
-      });
-
-      const p2 = await prisma.paciente.create({
-        data: {
-          nome: "Carlos Henrique",
-          telefone: "(11) 97654-3210",
-          email: "carlos.h@email.com",
-          nascimento: "1988-11-20",
-          status: "Ativo",
-        },
-      });
-
-      const p3 = await prisma.paciente.create({
-        data: {
-          nome: "Ana Beatriz",
-          telefone: "(11) 96543-2109",
-          email: "ana.beatriz@email.com",
-          nascimento: "1999-03-08",
-          status: "Ativo",
-        },
-      });
-
-      await prisma.consulta.createMany({
-        data: [
-          {
-            pacienteId: p1.id,
-            data: hoje,
-            horario: "09:00",
-            duracao: "45",
-            procedimento: "Limpeza e Profilaxia",
-            status: "Confirmada",
-          },
-          {
-            pacienteId: p2.id,
-            data: hoje,
-            horario: "10:30",
-            duracao: "30",
-            procedimento: "Avaliação Inicial",
-            status: "Agendada",
-          },
-          {
-            pacienteId: p3.id,
-            data: hoje,
-            horario: "14:00",
-            duracao: "60",
-            procedimento: "Restauração Estética",
-            status: "Confirmada",
-          },
-        ],
-      });
-
-      await prisma.orcamento.createMany({
-        data: [
-          {
-            pacienteId: p1.id,
-            procedimento: "Clareamento Dental a Laser",
-            valor: 850.0,
-            data: hoje,
-            status: "Aprovado",
-          },
-          {
-            pacienteId: p2.id,
-            procedimento: "Implante Unitário",
-            valor: 3200.0,
-            data: hoje,
-            status: "Pendente",
-          },
-        ],
-      });
-
-      await prisma.lembrete.createMany({
-        data: [
-          {
-            titulo: "Confirmar consultas de amanhã",
-            descricao: "Enviar mensagem via WhatsApp para pacientes agendados",
-            data: hoje,
-            hora: "16:00",
-            prioridade: "Alta",
-            concluido: false,
-          },
-          {
-            titulo: "Receber material de moldagem",
-            descricao: "Verificar entrega da distribuidora odontológica",
-            data: hoje,
-            hora: "11:00",
-            prioridade: "Média",
-            concluido: true,
-          },
-        ],
-      });
-
-      console.log("✔ Dados de exemplo criados com sucesso.");
-    }
-  } catch (err) {
-    console.error("Aviso ao inicializar dados padrão:", err.message);
-  }
-}
 
 // ==========================================
 // INICIALIZAÇÃO DO SERVIDOR
@@ -818,5 +836,4 @@ const PORT = process.env.PORT || 3001;
 app.listen(PORT, async () => {
   console.log(`🚀 Servidor rodando na porta ${PORT}`);
   console.log(`🔗 API disponível em: http://localhost:${PORT}`);
-  await inicializarDadosPadrao();
 });
