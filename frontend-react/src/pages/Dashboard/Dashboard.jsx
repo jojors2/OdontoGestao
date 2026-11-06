@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import {
   CalendarDays,
   Users,
@@ -7,55 +8,53 @@ import {
   CheckCircle,
   XCircle,
 } from "lucide-react";
-
-import {Link} from "react-router-dom"
+import { Link } from "react-router-dom";
 import "./Dashboard.css";
-import Agenda from "../Agenda/Agenda";
 
 function Dashboard() {
-  const consultas = [
-    {
-      id: 1,
-      horario: "08:00",
-      paciente: "Mariana Silva",
-      procedimento: "Limpeza",
-      status: "Confirmada",
-    },
-    {
-      id: 2,
-      horario: "10:30",
-      paciente: "Carlos Henrique",
-      procedimento: "Avaliação",
-      status: "Cancelada",
-    },
-    {
-      id: 3,
-      horario: "14:00",
-      paciente: "Ana Beatriz",
-      procedimento: "Restauração",
-      status: "Confirmada",
-    },
-    {
-      id: 4,
-      horario: "16:30",
-      paciente: "Lucas Souza",
-      procedimento: "Retorno",
-      status: "Aguardando",
-    },
-  ];
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    totalPacientes: 0,
+    consultasHoje: 0,
+    totalConsultas: 0,
+    totalOrcamentos: 0,
+    lembretesPendentes: 0,
+    proximasConsultas: [],
+    resumoHoje: { concluidas: 0, agendadas: 0, canceladas: 0 },
+  });
+
+  useEffect(() => {
+    async function carregarDashboard() {
+      try {
+        setLoading(true);
+        const res = await fetch("http://localhost:3001/api/dashboard");
+        if (res.ok) {
+          const dados = await res.json();
+          setStats(dados);
+        }
+      } catch (err) {
+        console.error("Erro ao carregar dados do dashboard:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    carregarDashboard();
+  }, []);
+
+  const consultas = stats.proximasConsultas || [];
+  const resumo = stats.resumoHoje || { concluidas: 0, agendadas: 0, canceladas: 0 };
 
   return (
     <div className="dashboard">
       <div className="dashboard-header">
         <div>
           <h1>Dashboard</h1>
-
           <p>Visão geral da clínica</p>
         </div>
 
         <div className="dashboard-date">
           <CalendarDays size={20} />
-
           <span>Hoje</span>
         </div>
       </div>
@@ -65,10 +64,9 @@ function Dashboard() {
           <div className="card-icon">
             <CalendarDays size={25} />
           </div>
-
           <div>
-            <span>Consultas</span>
-            <strong>8</strong>
+            <span>Consultas hoje</span>
+            <strong>{stats.consultasHoje}</strong>
           </div>
         </div>
 
@@ -76,10 +74,9 @@ function Dashboard() {
           <div className="card-icon">
             <Users size={25} />
           </div>
-
           <div>
             <span>Pacientes</span>
-            <strong>124</strong>
+            <strong>{stats.totalPacientes}</strong>
           </div>
         </div>
 
@@ -87,10 +84,9 @@ function Dashboard() {
           <div className="card-icon">
             <ClipboardList size={25} />
           </div>
-
           <div>
             <span>Orçamentos pendentes</span>
-            <strong>6</strong>
+            <strong>{stats.totalOrcamentos}</strong>
           </div>
         </div>
 
@@ -98,10 +94,9 @@ function Dashboard() {
           <div className="card-icon">
             <Bell size={25} />
           </div>
-
           <div>
-            <span>Lembretes</span>
-            <strong>3</strong>
+            <span>Lembretes pendentes</span>
+            <strong>{stats.lembretesPendentes}</strong>
           </div>
         </div>
       </div>
@@ -111,10 +106,7 @@ function Dashboard() {
           <div className="section-header">
             <div>
               <h2>Próximas consultas</h2>
-
-              <p>
-                Consultas agendadas para hoje
-              </p>
+              <p>Consultas agendadas no sistema</p>
             </div>
 
             <Link to="/agenda" className="btn-ver-agenda">
@@ -123,42 +115,37 @@ function Dashboard() {
           </div>
 
           <div className="consultas-list">
-            {consultas.map((consulta) => (
-              <div
-                className="consulta-item"
-                key={consulta.id}
-              >
-                <div className="consulta-horario">
-                  <Clock size={18} />
+            {consultas.length === 0 ? (
+              <p style={{ padding: "16px", color: "#6b7280" }}>
+                {loading ? "Carregando consultas..." : "Nenhuma consulta agendada para hoje."}
+              </p>
+            ) : (
+              consultas.map((consulta) => (
+                <div className="consulta-item" key={consulta.id}>
+                  <div className="consulta-horario">
+                    <Clock size={18} />
+                    <strong>{consulta.horario}</strong>
+                  </div>
 
-                  <strong>
-                    {consulta.horario}
-                  </strong>
-                </div>
+                  <div className="consulta-paciente">
+                    <strong>{consulta.paciente}</strong>
+                    <span>{consulta.procedimento}</span>
+                  </div>
 
-                <div className="consulta-paciente">
-                  <strong>
-                    {consulta.paciente}
-                  </strong>
-
-                  <span>
-                    {consulta.procedimento}
+                  <span
+                    className={`consulta-status ${
+                      consulta.status === "Confirmada"
+                        ? "status-confirmada"
+                        : consulta.status === "Cancelada"
+                        ? "status-cancelada"
+                        : "status-aguardando"
+                    }`}
+                  >
+                    {consulta.status}
                   </span>
                 </div>
-
-                <span
-                  className={`consulta-status ${
-                    consulta.status === "Confirmada"
-                      ? "status-confirmada"
-                      : consulta.status === "Cancelada"
-                      ? "status-cancelada"
-                      : "status-aguardando"
-                  }`}
-                >
-                  {consulta.status}
-                </span>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </section>
 
@@ -166,10 +153,7 @@ function Dashboard() {
           <div className="section-header">
             <div>
               <h2>Resumo de hoje</h2>
-
-              <p>
-                Situação dos atendimentos
-              </p>
+              <p>Situação dos atendimentos</p>
             </div>
           </div>
 
@@ -178,9 +162,8 @@ function Dashboard() {
               <div className="resumo-icon">
                 <CheckCircle size={20} />
               </div>
-
               <div>
-                <strong>3</strong>
+                <strong>{resumo.concluidas}</strong>
                 <span>Concluídas</span>
               </div>
             </div>
@@ -189,9 +172,8 @@ function Dashboard() {
               <div className="resumo-icon">
                 <Clock size={20} />
               </div>
-
               <div>
-                <strong>5</strong>
+                <strong>{resumo.agendadas}</strong>
                 <span>Agendadas</span>
               </div>
             </div>
@@ -200,10 +182,9 @@ function Dashboard() {
               <div className="resumo-icon">
                 <XCircle size={20} />
               </div>
-
               <div>
-                <strong>1</strong>
-                <span>Cancelada</span>
+                <strong>{resumo.canceladas}</strong>
+                <span>Canceladas</span>
               </div>
             </div>
           </div>

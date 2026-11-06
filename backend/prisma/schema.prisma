@@ -3,33 +3,38 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  // Para usar SQLite (local, sem necessidade de internet ou credenciais):
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+
+  // Para usar Supabase (PostgreSQL), comente as 2 linhas acima e descomente as 3 abaixo:
+  // provider  = "postgresql"
+  // url       = env("DATABASE_URL")
+  // directUrl = env("DIRECT_URL")
 }
 
 model Usuario {
-  id        Int      @id @default(autoincrement())
-  nome      String
-  email     String   @unique
-  senha     String
-  perfil    String   @default("RECEPCIONISTA") // ADMIN, DENTISTA, RECEPCIONISTA
-  cro       String?
-  criadoEm  DateTime @default(now())
+  id           Int      @id @default(autoincrement())
+  nome         String
+  email        String   @unique
+  senha        String
+  perfil       String   @default("RECEPCIONISTA") // ADMIN, DENTISTA, RECEPCIONISTA
+  cro          String?
+  criadoEm     DateTime @default(now())
   atualizadoEm DateTime @updatedAt
 }
 
 model Paciente {
-  id             Int         @id @default(autoincrement())
-  nome           String
-  telefone       String
-  email          String?
-  nascimento     String?
-  status         String      @default("Ativo") // Ativo, Inativo
-  consultas      Consulta[]
-  orcamentos     Orcamento[]
-  criadoEm       DateTime    @default(now())
-  atualizadoEm   DateTime    @updatedAt
+  id           Int         @id @default(autoincrement())
+  nome         String
+  telefone     String
+  email        String?
+  nascimento   String?
+  status       String      @default("Ativo") // Ativo, Inativo
+  consultas    Consulta[]
+  orcamentos   Orcamento[]
+  criadoEm     DateTime    @default(now())
+  atualizadoEm DateTime    @updatedAt
 }
 
 model Consulta {
@@ -60,15 +65,15 @@ model Orcamento {
 }
 
 model Lembrete {
-  id         Int      @id @default(autoincrement())
-  titulo     String
-  descricao  String?
-  paciente   String?
-  data       String
-  hora       String?
-  prioridade String   @default("Média") // Baixa, Média, Alta
-  concluido  Boolean  @default(false)
-  criadoEm   DateTime @default(now())
+  id           Int      @id @default(autoincrement())
+  titulo       String
+  descricao    String?
+  paciente     String?
+  data         String
+  hora         String?
+  prioridade   String   @default("Média") // Baixa, Média, Alta
+  concluido    Boolean  @default(false)
+  criadoEm     DateTime @default(now())
   atualizadoEm DateTime @updatedAt
 }
 

@@ -24,8 +24,13 @@ npm install react-router-dom
 
 senha supabase 9n1XOG8fSq9LvLDm
 
+<<<<<<< HEAD
 E-mail: admin@odontogestao.com
 Senha: admin
+=======
+http://localhost:5555
+
+>>>>>>> 7fff6523af841170ffd67db511c3f0e0c1ca6800
 
 
 Primeira versão: 

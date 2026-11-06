@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Bell,
   Plus,
@@ -21,65 +21,45 @@ function Lembretes() {
   const [filtro, setFiltro] = useState("Todos");
   const [modalAberto, setModalAberto] = useState(false);
   const [lembreteEditando, setLembreteEditando] = useState(null);
+  const [lembretes, setLembretes] = useState([]);
+  const [carregando, setCarregando] = useState(true);
 
   const [formulario, setFormulario] = useState({
     titulo: "",
     paciente: "",
-    data: "",
-    hora: "",
+    data: new Date().toISOString().slice(0, 10),
+    hora: "10:00",
     prioridade: "Média",
     descricao: "",
   });
 
-  const [lembretes, setLembretes] = useState([
-    {
-      id: 1,
-      titulo: "Confirmar consulta",
-      descricao: "Entrar em contato para confirmar o horário da consulta.",
-      paciente: "Mariana Silva",
-      data: "2026-08-29",
-      hora: "09:00",
-      prioridade: "Alta",
-      concluido: false,
-    },
-    {
-      id: 2,
-      titulo: "Retorno pós-procedimento",
-      descricao: "Verificar recuperação e possíveis desconfortos.",
-      paciente: "Carlos Oliveira",
-      data: "2026-08-29",
-      hora: "14:30",
-      prioridade: "Média",
-      concluido: false,
-    },
-    {
-      id: 3,
-      titulo: "Solicitar radiografia",
-      descricao: "Lembrar a paciente de trazer a radiografia panorâmica.",
-      paciente: "Ana Souza",
-      data: "2026-08-30",
-      hora: "10:00",
-      prioridade: "Baixa",
-      concluido: false,
-    },
-    {
-      id: 4,
-      titulo: "Atualizar prontuário",
-      descricao: "Registrar informações da última consulta.",
-      paciente: "João Martins",
-      data: "2026-08-28",
-      hora: "16:00",
-      prioridade: "Média",
-      concluido: true,
-    },
-  ]);
+  async function carregarLembretes() {
+    try {
+      setCarregando(true);
+      const res = await fetch("http://localhost:3001/api/lembretes");
+      if (res.ok) {
+        const dados = await res.json();
+        setLembretes(dados);
+      }
+    } catch (err) {
+      console.error("Erro ao carregar lembretes:", err);
+    } finally {
+      setCarregando(false);
+    }
+  }
+
+  useEffect(() => {
+    carregarLembretes();
+  }, []);
 
   function formatarData(data) {
     if (!data) return "";
-
-    const [ano, mes, dia] = data.split("-");
-
-    return `${dia}/${mes}/${ano}`;
+    const partes = data.split("-");
+    if (partes.length === 3) {
+      const [ano, mes, dia] = partes;
+      return `${dia}/${mes}/${ano}`;
+    }
+    return data;
   }
 
   function abrirNovoLembrete() {
@@ -88,8 +68,8 @@ function Lembretes() {
     setFormulario({
       titulo: "",
       paciente: "",
-      data: "",
-      hora: "",
+      data: new Date().toISOString().slice(0, 10),
+      hora: "10:00",
       prioridade: "Média",
       descricao: "",
     });
@@ -102,11 +82,11 @@ function Lembretes() {
 
     setFormulario({
       titulo: lembrete.titulo,
-      paciente: lembrete.paciente,
+      paciente: lembrete.paciente || "",
       data: lembrete.data,
-      hora: lembrete.hora,
-      prioridade: lembrete.prioridade,
-      descricao: lembrete.descricao,
+      hora: lembrete.hora || "",
+      prioridade: lembrete.prioridade || "Média",
+      descricao: lembrete.descricao || "",
     });
 
     setModalAberto(true);
@@ -126,70 +106,90 @@ function Lembretes() {
     }));
   }
 
-  function salvarLembrete(event) {
+  async function salvarLembrete(event) {
     event.preventDefault();
 
-    if (
-      !formulario.titulo ||
-      !formulario.data ||
-      !formulario.hora
-    ) {
+    if (!formulario.titulo || !formulario.data || !formulario.hora) {
       return;
     }
 
-    if (lembreteEditando) {
-      setLembretes((listaAnterior) =>
-        listaAnterior.map((lembrete) =>
-          lembrete.id === lembreteEditando.id
-            ? {
-                ...lembrete,
-                ...formulario,
-              }
-            : lembrete
-        )
-      );
-    } else {
-      const novoLembrete = {
-        id: Date.now(),
-        ...formulario,
-        concluido: false,
-      };
+    try {
+      if (lembreteEditando) {
+        const res = await fetch(`http://localhost:3001/api/lembretes/${lembreteEditando.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(formulario),
+        });
 
-      setLembretes((listaAnterior) => [
-        novoLembrete,
-        ...listaAnterior,
-      ]);
+        if (res.ok) {
+          const atualizado = await res.json();
+          setLembretes((lista) =>
+            lista.map((l) => (l.id === atualizado.id ? atualizado : l))
+          );
+        }
+      } else {
+        const res = await fetch("http://localhost:3001/api/lembretes", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(formulario),
+        });
+
+        if (res.ok) {
+          const novo = await res.json();
+          setLembretes((lista) => [novo, ...lista]);
+        }
+      }
+
+      fecharModal();
+    } catch (err) {
+      console.error("Erro ao salvar lembrete:", err);
     }
-
-    fecharModal();
   }
 
-  function alternarConcluido(id) {
-    setLembretes((listaAnterior) =>
-      listaAnterior.map((lembrete) =>
-        lembrete.id === id
-          ? {
-              ...lembrete,
-              concluido: !lembrete.concluido,
-            }
-          : lembrete
-      )
-    );
+  async function alternarConcluido(id) {
+    try {
+      const res = await fetch(`http://localhost:3001/api/lembretes/${id}/toggle`, {
+        method: "PATCH",
+      });
+
+      if (res.ok) {
+        const atualizado = await res.json();
+        setLembretes((lista) =>
+          lista.map((l) => (l.id === id ? { ...l, concluido: atualizado.concluido } : l))
+        );
+      }
+    } catch (err) {
+      console.error("Erro ao alternar status do lembrete:", err);
+    }
   }
 
-  function excluirLembrete(id) {
-    setLembretes((listaAnterior) =>
-      listaAnterior.filter((lembrete) => lembrete.id !== id)
-    );
+  async function excluirLembrete(id) {
+    const confirmar = window.confirm("Deseja realmente excluir este lembrete?");
+    if (!confirmar) return;
+
+    try {
+      const res = await fetch(`http://localhost:3001/api/lembretes/${id}`, {
+        method: "DELETE",
+      });
+
+      if (res.ok) {
+        setLembretes((lista) => lista.filter((l) => l.id !== id));
+      }
+    } catch (err) {
+      console.error("Erro ao excluir lembrete:", err);
+    }
   }
 
   const lembretesFiltrados = lembretes.filter((lembrete) => {
     const textoBusca = busca.toLowerCase();
+    const titulo = (lembrete.titulo || "").toLowerCase();
+    const paciente = (lembrete.paciente || "").toLowerCase();
+    const descricao = (lembrete.descricao || "").toLowerCase();
 
     const correspondeBusca =
-      lembrete.titulo.toLowerCase().includes(textoBusca) ||
-      lembrete.paciente.toLowerCase().includes(textoBusca) ||
-      lembrete.descricao.toLowerCase().includes(textoBusca);
+      titulo.includes(textoBusca) ||
+      paciente.includes(textoBusca) ||
+      descricao.includes(textoBusca);
 
     const correspondeFiltro =
       filtro === "Todos" ||
@@ -199,45 +199,28 @@ function Lembretes() {
     return correspondeBusca && correspondeFiltro;
   });
 
-  const pendentes = lembretes.filter(
-    (lembrete) => !lembrete.concluido
-  ).length;
-
-  const concluidos = lembretes.filter(
-    (lembrete) => lembrete.concluido
-  ).length;
-
+  const pendentes = lembretes.filter((lembrete) => !lembrete.concluido).length;
+  const concluidos = lembretes.filter((lembrete) => lembrete.concluido).length;
   const prioridadeAlta = lembretes.filter(
-    (lembrete) =>
-      lembrete.prioridade === "Alta" && !lembrete.concluido
+    (lembrete) => lembrete.prioridade === "Alta" && !lembrete.concluido
   ).length;
 
   return (
     <div className="lembretes-page">
       {/* CABEÇALHO */}
-
       <div className="lembretes-page-header">
         <div className="lembretes-page-title">
           <h1>Lembretes</h1>
-
-          <p>
-            Organize tarefas e acompanhe lembretes importantes
-            da clínica.
-          </p>
+          <p>Organize tarefas e acompanhe lembretes importantes salvos no banco de dados.</p>
         </div>
 
-        <button
-          className="lembretes-primary-button"
-          onClick={abrirNovoLembrete}
-        >
+        <button className="lembretes-primary-button" onClick={abrirNovoLembrete}>
           <Plus size={19} />
-
           <span>Novo lembrete</span>
         </button>
       </div>
 
       {/* CARDS */}
-
       <div className="lembretes-stats">
         <div className="lembretes-stat-card">
           <div className="lembretes-stat-icon lembretes-icon-blue">
@@ -246,7 +229,6 @@ function Lembretes() {
 
           <div className="lembretes-stat-info">
             <span>Total de lembretes</span>
-
             <strong>{lembretes.length}</strong>
           </div>
         </div>
@@ -258,7 +240,6 @@ function Lembretes() {
 
           <div className="lembretes-stat-info">
             <span>Pendentes</span>
-
             <strong>{pendentes}</strong>
           </div>
         </div>
@@ -270,7 +251,6 @@ function Lembretes() {
 
           <div className="lembretes-stat-info">
             <span>Concluídos</span>
-
             <strong>{concluidos}</strong>
           </div>
         </div>
@@ -282,22 +262,17 @@ function Lembretes() {
 
           <div className="lembretes-stat-info">
             <span>Prioridade alta</span>
-
             <strong>{prioridadeAlta}</strong>
           </div>
         </div>
       </div>
 
       {/* CONTEÚDO */}
-
       <section className="lembretes-panel">
         <div className="lembretes-panel-header">
           <div>
             <h2>Meus lembretes</h2>
-
-            <p>
-              Visualize e organize as tarefas cadastradas.
-            </p>
+            <p>Visualize e organize as tarefas cadastradas.</p>
           </div>
 
           <span className="lembretes-total">
@@ -307,11 +282,9 @@ function Lembretes() {
         </div>
 
         {/* PESQUISA E FILTRO */}
-
         <div className="lembretes-toolbar">
           <div className="lembretes-search">
             <Search size={19} />
-
             <input
               type="text"
               placeholder="Buscar por lembrete ou paciente..."
@@ -321,46 +294,33 @@ function Lembretes() {
           </div>
 
           <div className="lembretes-filter">
-            {["Todos", "Pendentes", "Concluídos"].map(
-              (opcao) => (
-                <button
-                  key={opcao}
-                  className={
-                    filtro === opcao
-                      ? "lembretes-filter-active"
-                      : ""
-                  }
-                  onClick={() => setFiltro(opcao)}
-                >
-                  {opcao}
-                </button>
-              )
-            )}
+            {["Todos", "Pendentes", "Concluídos"].map((opcao) => (
+              <button
+                key={opcao}
+                className={filtro === opcao ? "lembretes-filter-active" : ""}
+                onClick={() => setFiltro(opcao)}
+              >
+                {opcao}
+              </button>
+            ))}
           </div>
         </div>
 
         {/* LISTA */}
-
         <div className="lembretes-list">
           {lembretesFiltrados.length > 0 ? (
             lembretesFiltrados.map((lembrete) => (
               <article
                 key={lembrete.id}
                 className={`lembrete-item ${
-                  lembrete.concluido
-                    ? "lembrete-item-concluido"
-                    : ""
+                  lembrete.concluido ? "lembrete-item-concluido" : ""
                 }`}
               >
                 <button
                   className={`lembrete-check ${
-                    lembrete.concluido
-                      ? "lembrete-check-active"
-                      : ""
+                    lembrete.concluido ? "lembrete-check-active" : ""
                   }`}
-                  onClick={() =>
-                    alternarConcluido(lembrete.id)
-                  }
+                  onClick={() => alternarConcluido(lembrete.id)}
                   aria-label="Marcar lembrete como concluído"
                 >
                   {lembrete.concluido ? (
@@ -375,14 +335,14 @@ function Lembretes() {
                     <div className="lembrete-title-area">
                       <div className="lembrete-title-line">
                         <h3>{lembrete.titulo}</h3>
-
                         <span
-                          className={`lembrete-priority lembrete-priority-${lembrete.prioridade.toLowerCase()}`}
+                          className={`lembrete-priority lembrete-priority-${(
+                            lembrete.prioridade || "média"
+                          ).toLowerCase()}`}
                         >
                           {lembrete.prioridade}
                         </span>
                       </div>
-
                       <p>{lembrete.descricao}</p>
                     </div>
 
@@ -390,9 +350,7 @@ function Lembretes() {
                       <button
                         className="lembrete-action-button"
                         title="Editar"
-                        onClick={() =>
-                          abrirEdicao(lembrete)
-                        }
+                        onClick={() => abrirEdicao(lembrete)}
                       >
                         <Pencil size={18} />
                       </button>
@@ -400,9 +358,7 @@ function Lembretes() {
                       <button
                         className="lembrete-action-button lembrete-delete-button"
                         title="Excluir"
-                        onClick={() =>
-                          excluirLembrete(lembrete.id)
-                        }
+                        onClick={() => excluirLembrete(lembrete.id)}
                       >
                         <Trash2 size={18} />
                       </button>
@@ -413,22 +369,17 @@ function Lembretes() {
                     {lembrete.paciente && (
                       <div className="lembrete-detail">
                         <UserRound size={16} />
-
                         <span>{lembrete.paciente}</span>
                       </div>
                     )}
 
                     <div className="lembrete-detail">
                       <CalendarDays size={16} />
-
-                      <span>
-                        {formatarData(lembrete.data)}
-                      </span>
+                      <span>{formatarData(lembrete.data)}</span>
                     </div>
 
                     <div className="lembrete-detail">
                       <Clock3 size={16} />
-
                       <span>{lembrete.hora}</span>
                     </div>
                   </div>
@@ -440,12 +391,11 @@ function Lembretes() {
               <div className="lembretes-empty-icon">
                 <Bell size={31} />
               </div>
-
               <h3>Nenhum lembrete encontrado</h3>
-
               <p>
-                Não encontramos lembretes correspondentes aos
-                filtros selecionados.
+                {carregando
+                  ? "Carregando lembretes do banco..."
+                  : "Não encontramos lembretes correspondentes aos filtros selecionados."}
               </p>
             </div>
           )}
@@ -453,24 +403,15 @@ function Lembretes() {
       </section>
 
       {/* MODAL */}
-
       {modalAberto && (
-        <div
-          className="lembretes-modal-overlay"
-          onMouseDown={fecharModal}
-        >
+        <div className="lembretes-modal-overlay" onMouseDown={fecharModal}>
           <div
             className="lembretes-modal"
             onMouseDown={(event) => event.stopPropagation()}
           >
             <div className="lembretes-modal-header">
               <div>
-                <h2>
-                  {lembreteEditando
-                    ? "Editar lembrete"
-                    : "Novo lembrete"}
-                </h2>
-
+                <h2>{lembreteEditando ? "Editar lembrete" : "Novo lembrete"}</h2>
                 <p>
                   {lembreteEditando
                     ? "Atualize as informações do lembrete."
@@ -478,23 +419,16 @@ function Lembretes() {
                 </p>
               </div>
 
-              <button
-                className="lembretes-modal-close"
-                onClick={fecharModal}
-              >
+              <button className="lembretes-modal-close" onClick={fecharModal}>
                 <X size={21} />
               </button>
             </div>
 
-            <form
-              className="lembretes-form"
-              onSubmit={salvarLembrete}
-            >
+            <form className="lembretes-form" onSubmit={salvarLembrete}>
               <div className="lembretes-form-group lembretes-form-full">
                 <label htmlFor="titulo">
                   Título <span>*</span>
                 </label>
-
                 <input
                   id="titulo"
                   name="titulo"
@@ -507,10 +441,7 @@ function Lembretes() {
               </div>
 
               <div className="lembretes-form-group lembretes-form-full">
-                <label htmlFor="paciente">
-                  Paciente
-                </label>
-
+                <label htmlFor="paciente">Paciente</label>
                 <input
                   id="paciente"
                   name="paciente"
@@ -526,7 +457,6 @@ function Lembretes() {
                   <label htmlFor="data">
                     Data <span>*</span>
                   </label>
-
                   <input
                     id="data"
                     name="data"
@@ -541,7 +471,6 @@ function Lembretes() {
                   <label htmlFor="hora">
                     Horário <span>*</span>
                   </label>
-
                   <input
                     id="hora"
                     name="hora"
@@ -554,10 +483,7 @@ function Lembretes() {
               </div>
 
               <div className="lembretes-form-group lembretes-form-full">
-                <label htmlFor="prioridade">
-                  Prioridade
-                </label>
-
+                <label htmlFor="prioridade">Prioridade</label>
                 <select
                   id="prioridade"
                   name="prioridade"
@@ -571,10 +497,7 @@ function Lembretes() {
               </div>
 
               <div className="lembretes-form-group lembretes-form-full">
-                <label htmlFor="descricao">
-                  Descrição
-                </label>
-
+                <label htmlFor="descricao">Descrição</label>
                 <textarea
                   id="descricao"
                   name="descricao"
@@ -594,13 +517,8 @@ function Lembretes() {
                   Cancelar
                 </button>
 
-                <button
-                  type="submit"
-                  className="lembretes-save-button"
-                >
-                  {lembreteEditando
-                    ? "Salvar alterações"
-                    : "Criar lembrete"}
+                <button type="submit" className="lembretes-save-button">
+                  {lembreteEditando ? "Salvar alterações" : "Criar lembrete"}
                 </button>
               </div>
             </form>

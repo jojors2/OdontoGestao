@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import {
   Plus,
   Search,
@@ -19,52 +19,38 @@ function Orcamentos() {
   const [busca, setBusca] = useState("");
   const [filtroStatus, setFiltroStatus] = useState("Todos");
   const [modalAberto, setModalAberto] = useState(false);
-
-  const [orcamentos, setOrcamentos] = useState([
-    {
-      id: 1,
-      paciente: "Ana Souza",
-      procedimento: "Clareamento dental",
-      data: "29/08/2026",
-      valor: 850,
-      status: "Pendente",
-    },
-    {
-      id: 2,
-      paciente: "Carlos Mendes",
-      procedimento: "Implante dentário",
-      data: "28/08/2026",
-      valor: 3200,
-      status: "Aprovado",
-    },
-    {
-      id: 3,
-      paciente: "Mariana Lima",
-      procedimento: "Tratamento de canal",
-      data: "27/08/2026",
-      valor: 1200,
-      status: "Recusado",
-    },
-    {
-      id: 4,
-      paciente: "João Pereira",
-      procedimento: "Limpeza",
-      data: "26/08/2026",
-      valor: 250,
-      status: "Aprovado",
-    },
-  ]);
+  const [orcamentos, setOrcamentos] = useState([]);
+  const [carregando, setCarregando] = useState(true);
 
   const [novoOrcamento, setNovoOrcamento] = useState({
     paciente: "",
     procedimento: "",
-    data: "",
+    data: new Date().toISOString().slice(0, 10),
     valor: "",
     status: "Pendente",
   });
 
+  async function carregarOrcamentos() {
+    try {
+      setCarregando(true);
+      const res = await fetch("http://localhost:3001/api/orcamentos");
+      if (res.ok) {
+        const dados = await res.json();
+        setOrcamentos(dados);
+      }
+    } catch (err) {
+      console.error("Erro ao carregar orçamentos:", err);
+    } finally {
+      setCarregando(false);
+    }
+  }
+
+  useEffect(() => {
+    carregarOrcamentos();
+  }, []);
+
   const formatarValor = (valor) => {
-    return Number(valor).toLocaleString("pt-BR", {
+    return Number(valor || 0).toLocaleString("pt-BR", {
       style: "currency",
       currency: "BRL",
     });
@@ -73,14 +59,14 @@ function Orcamentos() {
   const orcamentosFiltrados = useMemo(() => {
     return orcamentos.filter((orcamento) => {
       const textoBusca = busca.toLowerCase();
+      const nomePaciente = (orcamento.paciente || "").toLowerCase();
+      const nomeProcedimento = (orcamento.procedimento || "").toLowerCase();
 
       const correspondeBusca =
-        orcamento.paciente.toLowerCase().includes(textoBusca) ||
-        orcamento.procedimento.toLowerCase().includes(textoBusca);
+        nomePaciente.includes(textoBusca) || nomeProcedimento.includes(textoBusca);
 
       const correspondeStatus =
-        filtroStatus === "Todos" ||
-        orcamento.status === filtroStatus;
+        filtroStatus === "Todos" || orcamento.status === filtroStatus;
 
       return correspondeBusca && correspondeStatus;
     });
@@ -98,13 +84,13 @@ function Orcamentos() {
 
   const valorAprovado = orcamentos
     .filter((orcamento) => orcamento.status === "Aprovado")
-    .reduce((total, orcamento) => total + Number(orcamento.valor), 0);
+    .reduce((total, orcamento) => total + Number(orcamento.valor || 0), 0);
 
   const abrirModal = () => {
     setNovoOrcamento({
       paciente: "",
       procedimento: "",
-      data: "",
+      data: new Date().toISOString().slice(0, 10),
       valor: "",
       status: "Pendente",
     });
@@ -125,27 +111,43 @@ function Orcamentos() {
     }));
   };
 
-  const salvarOrcamento = (event) => {
+  const salvarOrcamento = async (event) => {
     event.preventDefault();
 
-    const novo = {
-      ...novoOrcamento,
-      id: Date.now(),
-      valor: Number(novoOrcamento.valor),
-      data: new Date(
-        `${novoOrcamento.data}T00:00:00`
-      ).toLocaleDateString("pt-BR"),
-    };
+    try {
+      const res = await fetch("http://localhost:3001/api/orcamentos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(novoOrcamento),
+      });
 
-    setOrcamentos((anteriores) => [novo, ...anteriores]);
-
-    fecharModal();
+      if (res.ok) {
+        const salvo = await res.json();
+        setOrcamentos((anteriores) => [salvo, ...anteriores]);
+        fecharModal();
+      }
+    } catch (err) {
+      console.error("Erro ao salvar orçamento no banco:", err);
+    }
   };
 
-  const excluirOrcamento = (id) => {
-    setOrcamentos((anteriores) =>
-      anteriores.filter((orcamento) => orcamento.id !== id)
-    );
+  const excluirOrcamento = async (id) => {
+    const confirmar = window.confirm("Deseja realmente excluir este orçamento?");
+    if (!confirmar) return;
+
+    try {
+      const res = await fetch(`http://localhost:3001/api/orcamentos/${id}`, {
+        method: "DELETE",
+      });
+
+      if (res.ok) {
+        setOrcamentos((anteriores) =>
+          anteriores.filter((orcamento) => orcamento.id !== id)
+        );
+      }
+    } catch (err) {
+      console.error("Erro ao excluir orçamento:", err);
+    }
   };
 
   return (
@@ -153,22 +155,14 @@ function Orcamentos() {
       {/* =========================
           TÍTULO
       ========================== */}
-
       <div className="orcamentos-page-header">
         <div>
           <h1>Orçamentos</h1>
-
-          <p>
-            Crie e acompanhe os orçamentos dos seus pacientes.
-          </p>
+          <p>Crie e acompanhe os orçamentos dos seus pacientes salvos no banco de dados.</p>
         </div>
 
-        <button
-          className="orcamentos-btn-primary"
-          onClick={abrirModal}
-        >
+        <button className="orcamentos-btn-primary" onClick={abrirModal}>
           <Plus size={19} />
-
           Novo orçamento
         </button>
       </div>
@@ -176,7 +170,6 @@ function Orcamentos() {
       {/* =========================
           CARDS
       ========================== */}
-
       <section className="orcamentos-cards">
         <article className="orcamentos-card">
           <div className="orcamentos-card-icon azul">
@@ -226,23 +219,19 @@ function Orcamentos() {
       {/* =========================
           LISTAGEM
       ========================== */}
-
       <section className="orcamentos-lista">
         <div className="orcamentos-lista-header">
           <div>
             <h2>Lista de orçamentos</h2>
-            <p>
-              Consulte e gerencie os orçamentos cadastrados.
-            </p>
+            <p>Consulte e gerencie os orçamentos cadastrados.</p>
           </div>
 
           <div className="orcamentos-filtros">
             <div className="orcamentos-search">
               <Search size={18} />
-
               <input
                 type="text"
-                placeholder="Buscar paciente..."
+                placeholder="Buscar paciente ou procedimento..."
                 value={busca}
                 onChange={(event) => setBusca(event.target.value)}
               />
@@ -250,9 +239,7 @@ function Orcamentos() {
 
             <select
               value={filtroStatus}
-              onChange={(event) =>
-                setFiltroStatus(event.target.value)
-              }
+              onChange={(event) => setFiltroStatus(event.target.value)}
             >
               <option value="Todos">Todos</option>
               <option value="Pendente">Pendentes</option>
@@ -282,34 +269,22 @@ function Orcamentos() {
                     <td data-label="Paciente">
                       <div className="orcamentos-paciente">
                         <div className="orcamentos-avatar">
-                          {orcamento.paciente
-                            .charAt(0)
-                            .toUpperCase()}
+                          {(orcamento.paciente || "P").charAt(0).toUpperCase()}
                         </div>
-
                         <span>{orcamento.paciente}</span>
                       </div>
                     </td>
 
-                    <td data-label="Procedimento">
-                      {orcamento.procedimento}
-                    </td>
+                    <td data-label="Procedimento">{orcamento.procedimento}</td>
 
-                    <td data-label="Data">
-                      {orcamento.data}
-                    </td>
+                    <td data-label="Data">{orcamento.data}</td>
 
-                    <td
-                      data-label="Valor"
-                      className="orcamentos-valor"
-                    >
+                    <td data-label="Valor" className="orcamentos-valor">
                       {formatarValor(orcamento.valor)}
                     </td>
 
                     <td data-label="Status">
-                      <span
-                        className={`orcamentos-status ${orcamento.status.toLowerCase()}`}
-                      >
+                      <span className={`orcamentos-status ${(orcamento.status || "").toLowerCase()}`}>
                         {orcamento.status}
                       </span>
                     </td>
@@ -317,25 +292,9 @@ function Orcamentos() {
                     <td data-label="Ações">
                       <div className="orcamentos-acoes">
                         <button
-                          className="orcamentos-acao visualizar"
-                          title="Visualizar"
-                        >
-                          <Eye size={17} />
-                        </button>
-
-                        <button
-                          className="orcamentos-acao editar"
-                          title="Editar"
-                        >
-                          <Pencil size={17} />
-                        </button>
-
-                        <button
                           className="orcamentos-acao excluir"
                           title="Excluir"
-                          onClick={() =>
-                            excluirOrcamento(orcamento.id)
-                          }
+                          onClick={() => excluirOrcamento(orcamento.id)}
                         >
                           <Trash2 size={17} />
                         </button>
@@ -345,19 +304,13 @@ function Orcamentos() {
                 ))
               ) : (
                 <tr>
-                  <td
-                    colSpan="6"
-                    className="orcamentos-vazio"
-                  >
+                  <td colSpan="6" className="orcamentos-vazio">
                     <FileText size={36} />
-
-                    <strong>
-                      Nenhum orçamento encontrado
-                    </strong>
-
+                    <strong>Nenhum orçamento encontrado</strong>
                     <span>
-                      Tente alterar os filtros ou cadastrar um
-                      novo orçamento.
+                      {carregando
+                        ? "Carregando orçamentos do banco..."
+                        : "Tente alterar os filtros ou cadastrar um novo orçamento."}
                     </span>
                   </td>
                 </tr>
@@ -370,12 +323,8 @@ function Orcamentos() {
       {/* =========================
           MODAL
       ========================== */}
-
       {modalAberto && (
-        <div
-          className="orcamentos-modal-overlay"
-          onMouseDown={fecharModal}
-        >
+        <div className="orcamentos-modal-overlay" onMouseDown={fecharModal}>
           <div
             className="orcamentos-modal"
             onMouseDown={(event) => event.stopPropagation()}
@@ -383,26 +332,17 @@ function Orcamentos() {
             <div className="orcamentos-modal-header">
               <div>
                 <h2>Novo orçamento</h2>
-                <p>
-                  Preencha os dados do novo orçamento.
-                </p>
+                <p>Preencha os dados do novo orçamento.</p>
               </div>
 
-              <button
-                className="orcamentos-modal-close"
-                onClick={fecharModal}
-              >
+              <button className="orcamentos-modal-close" onClick={fecharModal}>
                 <X size={20} />
               </button>
             </div>
 
-            <form
-              className="orcamentos-form"
-              onSubmit={salvarOrcamento}
-            >
+            <form className="orcamentos-form" onSubmit={salvarOrcamento}>
               <div className="orcamentos-form-group full">
                 <label>Paciente</label>
-
                 <input
                   type="text"
                   name="paciente"
@@ -415,7 +355,6 @@ function Orcamentos() {
 
               <div className="orcamentos-form-group full">
                 <label>Procedimento</label>
-
                 <input
                   type="text"
                   name="procedimento"
@@ -428,7 +367,6 @@ function Orcamentos() {
 
               <div className="orcamentos-form-group">
                 <label>Data</label>
-
                 <input
                   type="date"
                   name="data"
@@ -440,7 +378,6 @@ function Orcamentos() {
 
               <div className="orcamentos-form-group">
                 <label>Valor</label>
-
                 <input
                   type="number"
                   name="valor"
@@ -455,23 +392,14 @@ function Orcamentos() {
 
               <div className="orcamentos-form-group full">
                 <label>Status</label>
-
                 <select
                   name="status"
                   value={novoOrcamento.status}
                   onChange={handleChange}
                 >
-                  <option value="Pendente">
-                    Pendente
-                  </option>
-
-                  <option value="Aprovado">
-                    Aprovado
-                  </option>
-
-                  <option value="Recusado">
-                    Recusado
-                  </option>
+                  <option value="Pendente">Pendente</option>
+                  <option value="Aprovado">Aprovado</option>
+                  <option value="Recusado">Recusado</option>
                 </select>
               </div>
 
@@ -484,12 +412,8 @@ function Orcamentos() {
                   Cancelar
                 </button>
 
-                <button
-                  type="submit"
-                  className="orcamentos-btn-primary"
-                >
+                <button type="submit" className="orcamentos-btn-primary">
                   <Save size={18} />
-
                   Salvar orçamento
                 </button>
               </div>

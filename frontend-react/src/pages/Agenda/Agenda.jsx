@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import {
   CalendarDays,
   ChevronLeft,
@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 
 import "./Agenda.css";
-import {Link} from "react-router-dom"
+import { Link } from "react-router-dom";
 
 function Agenda() {
   const hoje = new Date();
@@ -21,53 +21,27 @@ function Agenda() {
   );
 
   const [diaSelecionado, setDiaSelecionado] = useState(hoje);
+  const [consultas, setConsultas] = useState([]);
+  const [carregando, setCarregando] = useState(true);
 
-  /*
-    Dados temporários.
-    Depois vamos buscar isso no backend/banco de dados.
-  */
-  const consultas = [
-    {
-      id: 1,
-      paciente: "Maria Silva",
-      data: "2026-08-29",
-      horario: "08:30",
-      procedimento: "Limpeza",
-      status: "Confirmada",
-    },
-    {
-      id: 2,
-      paciente: "João Santos",
-      data: "2026-08-29",
-      horario: "10:00",
-      procedimento: "Avaliação",
-      status: "Aguardando",
-    },
-    {
-      id: 3,
-      paciente: "Ana Oliveira",
-      data: "2026-08-29",
-      horario: "14:30",
-      procedimento: "Restauração",
-      status: "Confirmada",
-    },
-    {
-      id: 4,
-      paciente: "Carlos Souza",
-      data: "2026-08-31",
-      horario: "09:30",
-      procedimento: "Retorno",
-      status: "Confirmada",
-    },
-    {
-      id: 5,
-      paciente: "Fernanda Lima",
-      data: "2026-09-02",
-      horario: "15:00",
-      procedimento: "Clareamento",
-      status: "Aguardando",
-    },
-  ];
+  async function carregarConsultas() {
+    try {
+      setCarregando(true);
+      const res = await fetch("http://localhost:3001/api/consultas");
+      if (res.ok) {
+        const dados = await res.json();
+        setConsultas(dados);
+      }
+    } catch (err) {
+      console.error("Erro ao carregar consultas:", err);
+    } finally {
+      setCarregando(false);
+    }
+  }
+
+  useEffect(() => {
+    carregarConsultas();
+  }, []);
 
   const diasSemana = [
     "Dom",
@@ -127,11 +101,6 @@ function Agenda() {
     setDiaSelecionado(hoje);
   }
 
-  /*
-    Gera sempre 42 posições.
-    Assim o calendário fica com 6 semanas e não muda
-    de tamanho dependendo do mês.
-  */
   const diasCalendario = useMemo(() => {
     const ano = mesAtual.getFullYear();
     const mes = mesAtual.getMonth();
@@ -148,9 +117,7 @@ function Agenda() {
 
     for (let i = 0; i < 42; i++) {
       const data = new Date(primeiroDiaCalendario);
-
       data.setDate(primeiroDiaCalendario.getDate() + i);
-
       dias.push(data);
     }
 
@@ -167,25 +134,21 @@ function Agenda() {
     );
 
   const consultasDoMes = consultas.filter((consulta) => {
-    const [ano, mes] = consulta.data
-      .split("-")
-      .map(Number);
-
+    if (!consulta.data) return false;
+    const [ano, mes] = consulta.data.split("-").map(Number);
     return (
       ano === mesAtual.getFullYear() &&
       mes === mesAtual.getMonth() + 1
     );
   });
 
-  const consultasConfirmadas =
-    consultasDoMes.filter(
-      (consulta) => consulta.status === "Confirmada"
-    ).length;
+  const consultasConfirmadas = consultasDoMes.filter(
+    (consulta) => consulta.status === "Confirmada"
+  ).length;
 
-  const consultasAguardando =
-    consultasDoMes.filter(
-      (consulta) => consulta.status === "Aguardando"
-    ).length;
+  const consultasAguardando = consultasDoMes.filter(
+    (consulta) => consulta.status === "Aguardando" || consulta.status === "Agendada"
+  ).length;
 
   function selecionarDia(data) {
     setDiaSelecionado(data);
@@ -206,7 +169,6 @@ function Agenda() {
 
   function quantidadeConsultas(data) {
     const dataFormatada = formatarData(data);
-
     return consultas.filter(
       (consulta) => consulta.data === dataFormatada
     ).length;
@@ -220,12 +182,11 @@ function Agenda() {
     }
   );
 
-  const tituloDiaSelecionado =
-    diaSelecionado.toLocaleDateString("pt-BR", {
-      weekday: "long",
-      day: "2-digit",
-      month: "long",
-    });
+  const tituloDiaSelecionado = diaSelecionado.toLocaleDateString("pt-BR", {
+    weekday: "long",
+    day: "2-digit",
+    month: "long",
+  });
 
   return (
     <div className="agenda-page">
@@ -233,10 +194,7 @@ function Agenda() {
       <div className="agenda-header">
         <div>
           <h1>Agenda</h1>
-
-          <p>
-            Visualize e organize os atendimentos da clínica.
-          </p>
+          <p>Visualize e organize os atendimentos da clínica sincronizados com o banco de dados.</p>
         </div>
 
         <Link to="/consultas" className="btn-nova-consulta">
@@ -253,10 +211,7 @@ function Agenda() {
 
           <div>
             <span>Consultas no mês</span>
-
-            <strong>
-              {consultasDoMes.length}
-            </strong>
+            <strong>{consultasDoMes.length}</strong>
           </div>
         </div>
 
@@ -267,10 +222,7 @@ function Agenda() {
 
           <div>
             <span>Confirmadas</span>
-
-            <strong>
-              {consultasConfirmadas}
-            </strong>
+            <strong>{consultasConfirmadas}</strong>
           </div>
         </div>
 
@@ -280,11 +232,8 @@ function Agenda() {
           </div>
 
           <div>
-            <span>Aguardando</span>
-
-            <strong>
-              {consultasAguardando}
-            </strong>
+            <span>Agendadas</span>
+            <strong>{consultasAguardando}</strong>
           </div>
         </div>
       </div>
@@ -295,18 +244,12 @@ function Agenda() {
         <section className="agenda-card agenda-calendar">
           <div className="agenda-calendar-header">
             <div>
-              <span className="agenda-card-subtitle">
-                Calendário
-              </span>
-
+              <span className="agenda-card-subtitle">Calendário</span>
               <h2>{nomeMes}</h2>
             </div>
 
             <div className="agenda-calendar-actions">
-              <button
-                className="agenda-today-button"
-                onClick={irParaHoje}
-              >
+              <button className="agenda-today-button" onClick={irParaHoje}>
                 Hoje
               </button>
 
@@ -336,21 +279,10 @@ function Agenda() {
 
           <div className="agenda-calendar-grid">
             {diasCalendario.map((data) => {
-              const foraDoMes =
-                data.getMonth() !==
-                mesAtual.getMonth();
-
-              const selecionado =
-                mesmoDia(
-                  data,
-                  diaSelecionado
-                );
-
-              const diaHoje =
-                mesmoDia(data, hoje);
-
-              const total =
-                quantidadeConsultas(data);
+              const foraDoMes = data.getMonth() !== mesAtual.getMonth();
+              const selecionado = mesmoDia(data, diaSelecionado);
+              const diaHoje = mesmoDia(data, hoje);
+              const total = quantidadeConsultas(data);
 
               return (
                 <button
@@ -358,29 +290,15 @@ function Agenda() {
                   key={formatarData(data)}
                   className={`
                     agenda-calendar-day
-                    ${
-                      foraDoMes
-                        ? "agenda-day-outside"
-                        : ""
-                    }
-                    ${
-                      selecionado
-                        ? "agenda-day-selected"
-                        : ""
-                    }
+                    ${foraDoMes ? "agenda-day-outside" : ""}
+                    ${selecionado ? "agenda-day-selected" : ""}
                   `}
-                  onClick={() =>
-                    selecionarDia(data)
-                  }
+                  onClick={() => selecionarDia(data)}
                 >
                   <span
                     className={`
                       agenda-day-number
-                      ${
-                        diaHoje
-                          ? "agenda-day-today"
-                          : ""
-                      }
+                      ${diaHoje ? "agenda-day-today" : ""}
                     `}
                   >
                     {data.getDate()}
@@ -389,12 +307,8 @@ function Agenda() {
                   {total > 0 && (
                     <div className="agenda-day-consultas">
                       <span />
-
                       <p>
-                        {total}{" "}
-                        {total === 1
-                          ? "consulta"
-                          : "consultas"}
+                        {total} {total === 1 ? "consulta" : "consultas"}
                       </p>
                     </div>
                   )}
@@ -407,91 +321,60 @@ function Agenda() {
         {/* CONSULTAS DO DIA */}
         <aside className="agenda-card agenda-day-panel">
           <div className="agenda-day-panel-header">
-            <span className="agenda-card-subtitle">
-              Consultas do dia
-            </span>
-
-            <h2>
-              {tituloDiaSelecionado}
-            </h2>
-
+            <span className="agenda-card-subtitle">Consultas do dia</span>
+            <h2>{tituloDiaSelecionado}</h2>
             <p>
               {consultasSelecionadas.length}{" "}
-              {consultasSelecionadas.length === 1
-                ? "atendimento"
-                : "atendimentos"}
+              {consultasSelecionadas.length === 1 ? "atendimento" : "atendimentos"}
             </p>
           </div>
 
           <div className="agenda-appointments">
             {consultasSelecionadas.length > 0 ? (
-              consultasSelecionadas.map(
-                (consulta) => (
-                  <article
-                    className="agenda-appointment"
-                    key={consulta.id}
-                  >
-                    <div className="agenda-appointment-top">
-                      <div className="agenda-time">
-                        <Clock3 size={16} />
-
-                        <span>
-                          {consulta.horario}
-                        </span>
-                      </div>
-
-                      <span
-                        className={`agenda-status ${
-                          consulta.status ===
-                          "Confirmada"
-                            ? "agenda-status-confirmada"
-                            : "agenda-status-aguardando"
-                        }`}
-                      >
-                        {consulta.status}
-                      </span>
+              consultasSelecionadas.map((consulta) => (
+                <article className="agenda-appointment" key={consulta.id}>
+                  <div className="agenda-appointment-top">
+                    <div className="agenda-time">
+                      <Clock3 size={16} />
+                      <span>{consulta.horario}</span>
                     </div>
 
-                    <div className="agenda-patient">
-                      <div className="agenda-patient-avatar">
-                        <UserRound size={20} />
-                      </div>
+                    <span
+                      className={`agenda-status ${
+                        consulta.status === "Confirmada"
+                          ? "agenda-status-confirmada"
+                          : "agenda-status-aguardando"
+                      }`}
+                    >
+                      {consulta.status}
+                    </span>
+                  </div>
 
-                      <div>
-                        <h3>
-                          {consulta.paciente}
-                        </h3>
-
-                        <p>
-                          {
-                            consulta.procedimento
-                          }
-                        </p>
-                      </div>
+                  <div className="agenda-patient">
+                    <div className="agenda-patient-avatar">
+                      <UserRound size={20} />
                     </div>
-                  </article>
-                )
-              )
+
+                    <div>
+                      <h3>{consulta.paciente}</h3>
+                      <p>{consulta.procedimento}</p>
+                    </div>
+                  </div>
+                </article>
+              ))
             ) : (
               <div className="agenda-empty">
                 <div className="agenda-empty-icon">
                   <CalendarDays size={28} />
                 </div>
 
-                <h3>
-                  Nenhuma consulta
-                </h3>
+                <h3>Nenhuma consulta</h3>
+                <p>Não existem atendimentos agendados para este dia.</p>
 
-                <p>
-                  Não existem atendimentos
-                  agendados para este dia.
-                </p>
-
-                <button className="agenda-empty-button">
+                <Link to="/consultas" className="agenda-empty-button" style={{ textDecoration: "none" }}>
                   <Plus size={17} />
-
                   Agendar consulta
-                </button>
+                </Link>
               </div>
             )}
           </div>
