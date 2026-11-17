@@ -24,20 +24,30 @@ function Agenda() {
   const [consultas, setConsultas] = useState([]);
   const [carregando, setCarregando] = useState(true);
 
+ 
   async function carregarConsultas() {
     try {
       setCarregando(true);
-      const res = await fetch("http://localhost:3001/api/consultas");
-      if (res.ok) {
-        const dados = await res.json();
-        setConsultas(dados);
+
+      const res = await fetch("/api/consultas", {
+        method: "GET",
+        credentials: "include",
+      });
+
+      if (!res.ok) {
+        throw new Error(`Erro ao carregar consultas: ${res.status}`);
       }
+
+      const dados = await res.json();
+      setConsultas(dados);
+
     } catch (err) {
       console.error("Erro ao carregar consultas:", err);
     } finally {
       setCarregando(false);
     }
   }
+
 
   useEffect(() => {
     carregarConsultas();

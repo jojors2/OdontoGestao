@@ -33,11 +33,18 @@ function Orcamentos() {
   async function carregarOrcamentos() {
     try {
       setCarregando(true);
-      const res = await fetch("http://localhost:3001/api/orcamentos");
-      if (res.ok) {
-        const dados = await res.json();
-        setOrcamentos(dados);
+
+      const res = await fetch("/api/orcamentos", {
+        method: "GET",
+        credentials: "include",
+      });
+
+      if (!res.ok) {
+        throw new Error(`Erro ao carregar orçamentos: ${res.status}`);
       }
+
+      const dados = await res.json();
+      setOrcamentos(dados);
     } catch (err) {
       console.error("Erro ao carregar orçamentos:", err);
     } finally {
@@ -115,36 +122,48 @@ function Orcamentos() {
     event.preventDefault();
 
     try {
-      const res = await fetch("http://localhost:3001/api/orcamentos", {
+      const res = await fetch("/api/orcamentos", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify(novoOrcamento),
       });
 
-      if (res.ok) {
-        const salvo = await res.json();
-        setOrcamentos((anteriores) => [salvo, ...anteriores]);
-        fecharModal();
+      if (!res.ok) {
+        throw new Error(`Erro ao salvar orçamento: ${res.status}`);
       }
+
+      const salvo = await res.json();
+
+      setOrcamentos((anteriores) => [salvo, ...anteriores]);
+      fecharModal();
     } catch (err) {
       console.error("Erro ao salvar orçamento no banco:", err);
     }
   };
 
   const excluirOrcamento = async (id) => {
-    const confirmar = window.confirm("Deseja realmente excluir este orçamento?");
+    const confirmar = window.confirm(
+      "Deseja realmente excluir este orçamento?"
+    );
+
     if (!confirmar) return;
 
     try {
-      const res = await fetch(`http://localhost:3001/api/orcamentos/${id}`, {
+      const res = await fetch(`/api/orcamentos/${id}`, {
         method: "DELETE",
+        credentials: "include",
       });
 
-      if (res.ok) {
-        setOrcamentos((anteriores) =>
-          anteriores.filter((orcamento) => orcamento.id !== id)
-        );
+      if (!res.ok) {
+        throw new Error(`Erro ao excluir orçamento: ${res.status}`);
       }
+
+      setOrcamentos((anteriores) =>
+        anteriores.filter((orcamento) => orcamento.id !== id)
+      );
     } catch (err) {
       console.error("Erro ao excluir orçamento:", err);
     }

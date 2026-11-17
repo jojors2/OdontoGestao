@@ -25,19 +25,26 @@ function Pacientes() {
   const [pacientes, setPacientes] = useState([]);
 
   async function carregarPacientes() {
-    try {
-      setCarregando(true);
-      const res = await fetch("http://localhost:3001/api/pacientes");
-      if (res.ok) {
-        const dados = await res.json();
-        setPacientes(dados);
-      }
-    } catch (err) {
-      console.error("Erro ao buscar pacientes:", err);
-    } finally {
-      setCarregando(false);
+  try {
+    setCarregando(true);
+
+    const res = await fetch("/api/pacientes", {
+      method: "GET",
+      credentials: "include",
+    });
+
+    if (!res.ok) {
+      throw new Error(`Erro ao buscar pacientes: ${res.status}`);
     }
+
+    const dados = await res.json();
+    setPacientes(dados);
+  } catch (err) {
+    console.error("Erro ao buscar pacientes:", err);
+  } finally {
+    setCarregando(false);
   }
+}
 
   useEffect(() => {
     carregarPacientes();
@@ -56,9 +63,9 @@ function Pacientes() {
 
     return pacientes.filter((paciente) => {
       const correspondeBusca =
-        paciente.nome.toLowerCase().includes(termo) ||
-        paciente.telefone.toLowerCase().includes(termo) ||
-        paciente.email.toLowerCase().includes(termo);
+        (paciente.nome || "").toLowerCase().includes(termo) ||
+        (paciente.telefone || "").toLowerCase().includes(termo) ||
+        (paciente.email || "").toLowerCase().includes(termo);
 
       const correspondeStatus =
         filtroStatus === "Todos" ||
@@ -123,30 +130,48 @@ function Pacientes() {
 
     try {
       if (pacienteEditando) {
-        const res = await fetch(`http://localhost:3001/api/pacientes/${pacienteEditando.id}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(form),
-        });
+        const res = await fetch(
+          `/api/pacientes/${pacienteEditando.id}`,
+          {
+            method: "PUT",
+            credentials: "include",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(form),
+          }
+        );
 
-        if (res.ok) {
-          const atualizado = await res.json();
-          setPacientes((anteriores) =>
-            anteriores.map((p) => (p.id === atualizado.id ? atualizado : p))
-          );
+        if (!res.ok) {
+          throw new Error(`Erro ao atualizar paciente: ${res.status}`);
         }
+
+        const atualizado = await res.json();
+
+        setPacientes((anteriores) =>
+          anteriores.map((p) =>
+            p.id === atualizado.id ? atualizado : p
+          )
+        );
       } else {
-        const res = await fetch("http://localhost:3001/api/pacientes", {
+        const res = await fetch("/api/pacientes", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
           body: JSON.stringify(form),
         });
 
-        if (res.ok) {
-          const novo = await res.json();
-          setPacientes((anteriores) => [novo, ...anteriores]);
+        if (!res.ok) {
+          throw new Error(`Erro ao cadastrar paciente: ${res.status}`);
         }
+
+        const novo = await res.json();
+
+        setPacientes((anteriores) => [novo, ...anteriores]);
       }
+
       fecharModal();
     } catch (err) {
       console.error("Erro ao salvar paciente:", err);
@@ -155,17 +180,25 @@ function Pacientes() {
   }
 
   async function excluirPaciente(id) {
-    const confirmar = window.confirm("Deseja realmente excluir este paciente?");
+    const confirmar = window.confirm(
+      "Deseja realmente excluir este paciente?"
+    );
+
     if (!confirmar) return;
 
     try {
-      const res = await fetch(`http://localhost:3001/api/pacientes/${id}`, {
+      const res = await fetch(`/api/pacientes/${id}`, {
         method: "DELETE",
+        credentials: "include",
       });
 
-      if (res.ok) {
-        setPacientes((anteriores) => anteriores.filter((p) => p.id !== id));
+      if (!res.ok) {
+        throw new Error(`Erro ao excluir paciente: ${res.status}`);
       }
+
+      setPacientes((anteriores) =>
+        anteriores.filter((p) => p.id !== id)
+      );
     } catch (err) {
       console.error("Erro ao excluir paciente:", err);
       alert("Erro ao excluir paciente do banco de dados.");

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -12,9 +13,11 @@ function Login() {
   const [carregando, setCarregando] = useState(false);
   const [mostrarSenha, setMostrarSenha] = useState(false);
 
-  // Se já estiver logado, redireciona direto para o dashboard
+  // Se já estiver logado, redireciona para o dashboard
   useEffect(() => {
-    const usuarioLogado = localStorage.getItem("usuarioLogado") === "true";
+    const usuarioLogado =
+      localStorage.getItem("usuarioLogado") === "true";
+
     if (usuarioLogado) {
       navigate("/dashboard", { replace: true });
     }
@@ -32,7 +35,7 @@ function Login() {
     setCarregando(true);
 
     try {
-      const resposta = await fetch("http://localhost:3001/api/login", {
+      const resposta = await fetch("/api/login", {
         method: "POST",
         credentials: "include",
         headers: {
@@ -48,14 +51,17 @@ function Login() {
         return;
       }
 
-      // Salva os dados do usuário autenticado no localStorage
+      // Salva os dados do usuário autenticado
       localStorage.setItem("usuarioLogado", "true");
       localStorage.setItem("usuario", JSON.stringify(dados));
 
       navigate("/dashboard", { replace: true });
+
     } catch (err) {
       console.error("Erro de conexão:", err);
-      setErro("Não foi possível conectar ao servidor. Verifique se o backend está ligado na porta 3001.");
+      setErro(
+        "Não foi possível conectar ao servidor. Tente novamente."
+      );
     } finally {
       setCarregando(false);
     }
@@ -66,54 +72,36 @@ function Login() {
       <div className="login-container">
         <div className="login-logo">
           <h1>OdontoGestão</h1>
-
-          <p>
-            Gestão simples para o seu consultório
-          </p>
+          <p>Gestão simples para o seu consultório</p>
         </div>
 
-        <form
-          className="login-form"
-          onSubmit={fazerLogin}
-        >
+        <form className="login-form" onSubmit={fazerLogin}>
           <h2>Entrar</h2>
 
           <div className="form-group">
-            <label htmlFor="email">
-              E-mail
-            </label>
+            <label htmlFor="email">E-mail</label>
 
             <input
               id="email"
               type="email"
               placeholder="Digite seu e-mail"
               value={email}
-              onChange={(event) =>
-                setEmail(event.target.value)
-              }
+              onChange={(event) => setEmail(event.target.value)}
               disabled={carregando}
               required
             />
           </div>
 
           <div className="form-group">
-            <label htmlFor="senha">
-              Senha
-            </label>
+            <label htmlFor="senha">Senha</label>
 
             <div className="password-container">
               <input
                 id="senha"
-                type={
-                  mostrarSenha
-                    ? "text"
-                    : "password"
-                }
+                type={mostrarSenha ? "text" : "password"}
                 placeholder="Digite sua senha"
                 value={senha}
-                onChange={(event) =>
-                  setSenha(event.target.value)
-                }
+                onChange={(event) => setSenha(event.target.value)}
                 disabled={carregando}
                 required
               />
@@ -121,19 +109,9 @@ function Login() {
               <button
                 type="button"
                 className="password-toggle"
-                onClick={() =>
-                  setMostrarSenha(!mostrarSenha)
-                }
-                title={
-                  mostrarSenha
-                    ? "Esconder senha"
-                    : "Mostrar senha"
-                }
-                aria-label={
-                  mostrarSenha
-                    ? "Esconder senha"
-                    : "Mostrar senha"
-                }
+                onClick={() => setMostrarSenha(!mostrarSenha)}
+                title={mostrarSenha ? "Esconder senha" : "Mostrar senha"}
+                aria-label={mostrarSenha ? "Esconder senha" : "Mostrar senha"}
               >
                 {mostrarSenha ? "🐵" : "🙈"}
               </button>

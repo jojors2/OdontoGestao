@@ -1,0 +1,9 @@
+
+{
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://odontogestao-backend.onrender.com/api/:path*"
+    }
+  ]
+}

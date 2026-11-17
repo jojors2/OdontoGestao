@@ -36,11 +36,18 @@ function Lembretes() {
   async function carregarLembretes() {
     try {
       setCarregando(true);
-      const res = await fetch("http://localhost:3001/api/lembretes");
-      if (res.ok) {
-        const dados = await res.json();
-        setLembretes(dados);
+
+      const res = await fetch("/api/lembretes", {
+        method: "GET",
+        credentials: "include",
+      });
+
+      if (!res.ok) {
+        throw new Error(`Erro ao carregar lembretes: ${res.status}`);
       }
+
+      const dados = await res.json();
+      setLembretes(dados);
     } catch (err) {
       console.error("Erro ao carregar lembretes:", err);
     } finally {
@@ -115,29 +122,44 @@ function Lembretes() {
 
     try {
       if (lembreteEditando) {
-        const res = await fetch(`http://localhost:3001/api/lembretes/${lembreteEditando.id}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(formulario),
-        });
+        const res = await fetch(
+          `/api/lembretes/${lembreteEditando.id}`,
+          {
+            method: "PUT",
+            credentials: "include",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(formulario),
+          }
+        );
 
-        if (res.ok) {
-          const atualizado = await res.json();
-          setLembretes((lista) =>
-            lista.map((l) => (l.id === atualizado.id ? atualizado : l))
-          );
+        if (!res.ok) {
+          throw new Error(`Erro ao atualizar lembrete: ${res.status}`);
         }
+
+        const atualizado = await res.json();
+
+        setLembretes((lista) =>
+          lista.map((l) => (l.id === atualizado.id ? atualizado : l))
+        );
       } else {
-        const res = await fetch("http://localhost:3001/api/lembretes", {
+        const res = await fetch("/api/lembretes", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
           body: JSON.stringify(formulario),
         });
 
-        if (res.ok) {
-          const novo = await res.json();
-          setLembretes((lista) => [novo, ...lista]);
+        if (!res.ok) {
+          throw new Error(`Erro ao criar lembrete: ${res.status}`);
         }
+
+        const novo = await res.json();
+
+        setLembretes((lista) => [novo, ...lista]);
       }
 
       fecharModal();
@@ -146,35 +168,47 @@ function Lembretes() {
     }
   }
 
-  async function alternarConcluido(id) {
+ async function alternarConcluido(id) {
     try {
-      const res = await fetch(`http://localhost:3001/api/lembretes/${id}/toggle`, {
+      const res = await fetch(`/api/lembretes/${id}/toggle`, {
         method: "PATCH",
+        credentials: "include",
       });
 
-      if (res.ok) {
-        const atualizado = await res.json();
-        setLembretes((lista) =>
-          lista.map((l) => (l.id === id ? { ...l, concluido: atualizado.concluido } : l))
-        );
+      if (!res.ok) {
+        throw new Error(`Erro ao alterar lembrete: ${res.status}`);
       }
+
+      const atualizado = await res.json();
+
+      setLembretes((lista) =>
+        lista.map((l) =>
+          l.id === id ? { ...l, concluido: atualizado.concluido } : l
+        )
+      );
     } catch (err) {
       console.error("Erro ao alternar status do lembrete:", err);
     }
   }
 
   async function excluirLembrete(id) {
-    const confirmar = window.confirm("Deseja realmente excluir este lembrete?");
+    const confirmar = window.confirm(
+      "Deseja realmente excluir este lembrete?"
+    );
+
     if (!confirmar) return;
 
     try {
-      const res = await fetch(`http://localhost:3001/api/lembretes/${id}`, {
+      const res = await fetch(`/api/lembretes/${id}`, {
         method: "DELETE",
+        credentials: "include",
       });
 
-      if (res.ok) {
-        setLembretes((lista) => lista.filter((l) => l.id !== id));
+      if (!res.ok) {
+        throw new Error(`Erro ao excluir lembrete: ${res.status}`);
       }
+
+      setLembretes((lista) => lista.filter((l) => l.id !== id));
     } catch (err) {
       console.error("Erro ao excluir lembrete:", err);
     }

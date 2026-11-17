@@ -14,13 +14,10 @@ function AppLayout({ children }) {
   useEffect(() => {
     async function buscarUsuario() {
       try {
-        const resposta = await fetch(
-          "http://localhost:3001/api/usuarios/me",
-          {
-            method: "GET",
-            credentials: "include",
-          }
-        );
+        const resposta = await fetch("/api/usuarios/me", {
+          method: "GET",
+          credentials: "include",
+        });
 
         if (!resposta.ok) {
           throw new Error("Não foi possível buscar o usuário.");

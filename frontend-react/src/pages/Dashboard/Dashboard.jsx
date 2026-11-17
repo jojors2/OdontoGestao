@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import {
   CalendarDays,
@@ -13,6 +14,7 @@ import "./Dashboard.css";
 
 function Dashboard() {
   const [loading, setLoading] = useState(true);
+
   const [stats, setStats] = useState({
     totalPacientes: 0,
     consultasHoje: 0,
@@ -20,21 +22,30 @@ function Dashboard() {
     totalOrcamentos: 0,
     lembretesPendentes: 0,
     proximasConsultas: [],
-    resumoHoje: { concluidas: 0, agendadas: 0, canceladas: 0 },
+    resumoHoje: {
+      concluidas: 0,
+      agendadas: 0,
+      canceladas: 0,
+    },
   });
 
   useEffect(() => {
     async function carregarDashboard() {
       try {
         setLoading(true);
-        const res = await fetch("http://localhost:3001/api/dashboard", {
+
+        const res = await fetch("/api/dashboard", {
           method: "GET",
           credentials: "include",
-        });;
-        if (res.ok) {
-          const dados = await res.json();
-          setStats(dados);
+        });
+
+        if (!res.ok) {
+          throw new Error(`Erro ao buscar dashboard: ${res.status}`);
         }
+
+        const dados = await res.json();
+        setStats(dados);
+
       } catch (err) {
         console.error("Erro ao carregar dados do dashboard:", err);
       } finally {
@@ -46,7 +57,12 @@ function Dashboard() {
   }, []);
 
   const consultas = stats.proximasConsultas || [];
-  const resumo = stats.resumoHoje || { concluidas: 0, agendadas: 0, canceladas: 0 };
+
+  const resumo = stats.resumoHoje || {
+    concluidas: 0,
+    agendadas: 0,
+    canceladas: 0,
+  };
 
   return (
     <div className="dashboard">
@@ -120,7 +136,9 @@ function Dashboard() {
           <div className="consultas-list">
             {consultas.length === 0 ? (
               <p style={{ padding: "16px", color: "#6b7280" }}>
-                {loading ? "Carregando consultas..." : "Nenhuma consulta agendada para hoje."}
+                {loading
+                  ? "Carregando consultas..."
+                  : "Nenhuma consulta agendada para hoje."}
               </p>
             ) : (
               consultas.map((consulta) => (

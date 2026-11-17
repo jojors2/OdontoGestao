@@ -33,31 +33,44 @@ function Consultas() {
   });
 
   async function carregarConsultas() {
-    try {
-      setCarregando(true);
-      const res = await fetch("http://localhost:3001/api/consultas");
-      if (res.ok) {
-        const dados = await res.json();
-        setConsultas(dados);
-      }
-    } catch (err) {
-      console.error("Erro ao carregar consultas:", err);
-    } finally {
-      setCarregando(false);
+  try {
+    setCarregando(true);
+
+    const res = await fetch("/api/consultas", {
+      method: "GET",
+      credentials: "include",
+    });
+
+    if (!res.ok) {
+      throw new Error(`Erro ao buscar consultas: ${res.status}`);
     }
+
+    const dados = await res.json();
+    setConsultas(dados);
+  } catch (err) {
+    console.error("Erro ao carregar consultas:", err);
+  } finally {
+    setCarregando(false);
   }
+}
 
   async function carregarPacientes() {
-    try {
-      const res = await fetch("http://localhost:3001/api/pacientes");
-      if (res.ok) {
-        const dados = await res.json();
-        setPacientes(dados);
-      }
-    } catch (err) {
-      console.error("Erro ao carregar pacientes:", err);
+  try {
+    const res = await fetch("/api/pacientes", {
+      method: "GET",
+      credentials: "include",
+    });
+
+    if (!res.ok) {
+      throw new Error(`Erro ao buscar pacientes: ${res.status}`);
     }
+
+    const dados = await res.json();
+    setPacientes(dados);
+  } catch (err) {
+    console.error("Erro ao carregar pacientes:", err);
   }
+}
 
   useEffect(() => {
     carregarConsultas();
@@ -101,47 +114,69 @@ function Consultas() {
     }
   }
 
-  async function excluirConsulta(id) {
-    const confirmar = window.confirm("Deseja realmente excluir esta consulta?");
-    if (!confirmar) return;
+  
+async function excluirConsulta(id) {
+  const confirmar = window.confirm(
+    "Deseja realmente excluir esta consulta?"
+  );
 
-    try {
-      const res = await fetch(`http://localhost:3001/api/consultas/${id}`, {
-        method: "DELETE",
-      });
-      if (res.ok) {
-        setConsultas((atuais) => atuais.filter((c) => c.id !== id));
-      }
-    } catch (err) {
-      console.error("Erro ao excluir consulta:", err);
-    }
-  }
+  if (!confirmar) return;
 
-  async function salvarConsulta(e) {
-    e.preventDefault();
-    try {
-      const res = await fetch("http://localhost:3001/api/consultas", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      });
-      if (res.ok) {
-        const nova = await res.json();
-        setConsultas((atuais) => [nova, ...atuais]);
-        setModalAberto(false);
-        setForm({
-          paciente: "",
-          procedimento: "",
-          data: new Date().toISOString().slice(0, 10),
-          horario: "09:00",
-          status: "Agendada",
-          observacoes: "",
-        });
-      }
-    } catch (err) {
-      console.error("Erro ao salvar consulta:", err);
+  try {
+    const res = await fetch(`/api/consultas/${id}`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+
+    if (!res.ok) {
+      throw new Error(`Erro ao excluir consulta: ${res.status}`);
     }
+
+    setConsultas((atuais) =>
+      atuais.filter((c) => c.id !== id)
+    );
+  } catch (err) {
+    console.error("Erro ao excluir consulta:", err);
   }
+}
+
+
+  
+async function salvarConsulta(e) {
+  e.preventDefault();
+
+  try {
+    const res = await fetch("/api/consultas", {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(form),
+    });
+
+    if (!res.ok) {
+      throw new Error(`Erro ao salvar consulta: ${res.status}`);
+    }
+
+    const nova = await res.json();
+
+    setConsultas((atuais) => [nova, ...atuais]);
+    setModalAberto(false);
+
+    setForm({
+      paciente: "",
+      procedimento: "",
+      data: new Date().toISOString().slice(0, 10),
+      horario: "09:00",
+      status: "Agendada",
+      observacoes: "",
+    });
+  } catch (err) {
+    console.error("Erro ao salvar consulta:", err);
+  }
+}
+
 
   return (
     <div className="consultas-page">
