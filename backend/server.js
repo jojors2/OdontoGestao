@@ -1,3 +1,4 @@
+
 require("dotenv").config();
 
 const express = require("express");
@@ -11,15 +12,18 @@ const {
   SUPABASE_URL,
   SUPABASE_ANON_KEY,
   SUPABASE_SERVICE_ROLE_KEY,
+  FRONTEND_URL,
   PORT = 3001,
   NODE_ENV = "development",
 } = process.env;
 
 if (!SUPABASE_URL || !SUPABASE_ANON_KEY || !SUPABASE_SERVICE_ROLE_KEY) {
   throw new Error(
-    "Configure SUPABASE_URL, SUPABASE_ANON_KEY e SUPABASE_SERVICE_ROLE_KEY no .env."
+    "Configure SUPABASE_URL, SUPABASE_ANON_KEY e SUPABASE_SERVICE_ROLE_KEY."
   );
 }
+
+// CLIENTES SUPABASE
 
 const supabaseAuth = createClient(
   SUPABASE_URL,
@@ -43,36 +47,56 @@ const supabaseAdmin = createClient(
   }
 );
 
-console.log("URL do Supabase:", SUPABASE_URL);
+// CORS
+
+const origensPermitidas = [
+  "http://localhost:5173",
+  "https://odontogestao-pjgyqllog-joelle6.vercel.app",
+  FRONTEND_URL,
+].filter(Boolean);
 
 app.use(cors({
-  origin: "http://localhost:5173",
+  origin: (origin, callback) => {
+    // Permite chamadas sem Origin, como algumas requisições servidor-servidor.
+    if (!origin || origensPermitidas.includes(origin)) {
+      return callback(null, true);
+    }
+
+    return callback(new Error("Origem não permitida pelo CORS."));
+  },
   credentials: true,
 }));
 
 app.use(express.json());
 app.use(cookieParser());
 
+// CONFIGURAÇÃO DO COOKIE
+
 const COOKIE_NAME = "odontogestao_token";
 
 const COOKIE_OPTIONS = {
   httpOnly: true,
   secure: NODE_ENV === "production",
-  sameSite: "lax",
+  sameSite: NODE_ENV === "production" ? "none" : "lax",
   path: "/",
   maxAge: 8 * 60 * 60 * 1000,
 };
 
+const COOKIE_CLEAR_OPTIONS = {
+  httpOnly: COOKIE_OPTIONS.httpOnly,
+  secure: COOKIE_OPTIONS.secure,
+  sameSite: COOKIE_OPTIONS.sameSite,
+  path: COOKIE_OPTIONS.path,
+};
+
+// TRATAMENTO DE ERROS
+
 function enviarErro(res, error, mensagem, status = 500) {
   console.error(mensagem, error);
-  return res.status(status).json({ erro: mensagem });
-}
 
-function converterId(id) {
-  if (id === undefined || id === null || id === "") return null;
-
-  const numero = Number(id);
-  return Number.isNaN(numero) ? id : numero;
+  return res.status(status).json({
+    erro: mensagem,
+  });
 }
 
 // AUTENTICAÇÃO
@@ -116,7 +140,6 @@ async function autenticarUsuario(req, res, next) {
     req.accessToken = token;
 
     next();
-
   } catch (error) {
     return enviarErro(
       res,
@@ -155,7 +178,7 @@ async function anexarPaciente(registros) {
     ...new Set(
       lista
         .map((item) => item.pacienteId)
-        .filter(Boolean)
+        .filter((id) => id !== null && id !== undefined)
     ),
   ];
 
@@ -197,6 +220,27 @@ async function anexarPaciente(registros) {
     : resultado[0];
 }
 
+// DATA NO FUSO DE SÃO PAULO
+
+function dataSaoPaulo() {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+}
+
+function proximoDia(data) {
+  const [ano, mes, dia] = data.split("-").map(Number);
+
+  const proximaData = new Date(
+    Date.UTC(ano, mes - 1, dia + 1)
+  );
+
+  return proximaData.toISOString().slice(0, 10);
+}
+
 // ROTA INICIAL
 
 app.get("/", (_req, res) => {
@@ -219,11 +263,9 @@ app.post("/api/login", async (req, res) => {
 
     const { data: loginData, error: loginError } =
       await supabaseAuth.auth.signInWithPassword({
-      email: String(email).trim().toLowerCase(),
-      password: senha,
-    });
-
-    console.log("Erro Supabase Auth:", loginError);
+        email: String(email).trim().toLowerCase(),
+        password: senha,
+      });
 
     if (
       loginError ||
@@ -245,10 +287,6 @@ app.post("/api/login", async (req, res) => {
     if (usuarioError) throw usuarioError;
 
     if (!usuario) {
-      await supabaseAdmin.auth.admin.signOut?.(
-        loginData.session.access_token
-      );
-
       return res.status(403).json({
         erro: "Usuário não cadastrado na clínica.",
       });
@@ -261,7 +299,6 @@ app.post("/api/login", async (req, res) => {
     );
 
     return res.json(usuario);
-
   } catch (error) {
     return enviarErro(
       res,
@@ -274,12 +311,7 @@ app.post("/api/login", async (req, res) => {
 // LOGOUT
 
 app.post("/api/logout", (_req, res) => {
-  res.clearCookie(COOKIE_NAME, {
-    httpOnly: true,
-    secure: NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
-  });
+  res.clearCookie(COOKIE_NAME, COOKIE_CLEAR_OPTIONS);
 
   return res.json({
     mensagem: "Logout realizado com sucesso.",
@@ -311,10 +343,13 @@ app.get(
 
       if (error) throw error;
 
-      res.json(data || []);
-
+      return res.json(data || []);
     } catch (error) {
-      enviarErro(res, error, "Erro ao listar usuários.");
+      return enviarErro(
+        res,
+        error,
+        "Erro ao listar usuários."
+      );
     }
   }
 );
@@ -404,7 +439,6 @@ app.post(
       if (insertError) throw insertError;
 
       return res.status(201).json(novoUsuario);
-
     } catch (error) {
       if (authUserId) {
         await supabaseAdmin.auth.admin.deleteUser(authUserId);
@@ -419,34 +453,15 @@ app.post(
   }
 );
 
-app.listen(PORT, () => {
-  console.log(`Servidor rodando na porta ${PORT}`);
-});
-
-
 // DASHBOARD
+
 app.get(
   "/api/dashboard",
   autenticarUsuario,
   async (_req, res) => {
     try {
-      // Data atual no fuso horário local
-      const agora = new Date();
-
-      const formatarData = (data) => {
-        const ano = data.getFullYear();
-        const mes = String(data.getMonth() + 1).padStart(2, "0");
-        const dia = String(data.getDate()).padStart(2, "0");
-
-        return `${ano}-${mes}-${dia}`;
-      };
-
-      const hoje = formatarData(agora);
-
-      const amanhaData = new Date(agora);
-      amanhaData.setDate(amanhaData.getDate() + 1);
-
-      const amanha = formatarData(amanhaData);
+      const hoje = dataSaoPaulo();
+      const amanha = proximoDia(hoje);
 
       // Total de pacientes
       const { count: totalPacientes, error: pacientesError } =
@@ -493,7 +508,7 @@ app.get(
 
       if (lembretesError) throw lembretesError;
 
-      // Próximas consultas (hoje e datas futuras)
+      // Próximas consultas
       const { data: proximasConsultas, error: proximasError } =
         await supabaseAdmin
           .from("Consulta")
@@ -505,12 +520,11 @@ app.get(
 
       if (proximasError) throw proximasError;
 
-      // Adiciona o nome do paciente às consultas
       const consultasComPaciente = await anexarPaciente(
         proximasConsultas || []
       );
 
-      // Calcula o resumo dos atendimentos de hoje
+      // Resumo de hoje
       const resumoHoje = {
         concluidas: 0,
         agendadas: 0,
@@ -522,9 +536,14 @@ app.get(
           .trim()
           .toLowerCase();
 
-        if (status === "concluída" || status === "concluida") {
+        if (
+          status === "concluída" ||
+          status === "concluida" ||
+          status === "concluído" ||
+          status === "concluido"
+        ) {
           resumoHoje.concluidas++;
-        } else if (status === "cancelada") {
+        } else if (status === "cancelada" || status === "cancelado") {
           resumoHoje.canceladas++;
         } else {
           resumoHoje.agendadas++;
@@ -540,7 +559,6 @@ app.get(
         proximasConsultas: consultasComPaciente,
         resumoHoje,
       });
-
     } catch (error) {
       return enviarErro(
         res,
@@ -550,3 +568,224 @@ app.get(
     }
   }
 );
+
+// INICIAR SERVIDOR - SEMPRE NO FINAL
+
+app.listen(PORT, () => {
+  console.log(`Servidor rodando na porta ${PORT}`);
+});
+
+
+// ==========================================
+// PACIENTES - CRUD COMPLETO
+// ==========================================
+
+// Converte os dados do banco para o formato esperado pelo React
+function formatarPaciente(paciente, ultimaConsulta = null) {
+  return {
+    id: paciente.id,
+    nome: paciente.nome || "",
+    cpf: paciente.cpf || "",
+    telefone: paciente.telefone || "",
+    email: paciente.email || "",
+    nascimento: paciente.datanascimento || "",
+    endereco: paciente.endereco || "",
+    observacoes: paciente.observacoes || "",
+    status: paciente.status || "Ativo",
+    ultimaConsulta: ultimaConsulta || null,
+  };
+}
+
+// GET - Listar pacientes
+app.get("/api/pacientes", autenticarUsuario, async (req, res) => {
+  try {
+    const { data: pacientes, error } = await supabaseAdmin
+      .from("Paciente")
+      .select("*")
+      .order("nome", { ascending: true });
+
+    if (error) throw error;
+
+    // Busca as consultas para identificar a última consulta de cada paciente
+    const { data: consultas, error: erroConsultas } = await supabaseAdmin
+      .from("Consulta")
+      .select("pacienteId, data")
+      .order("data", { ascending: false });
+
+    if (erroConsultas) throw erroConsultas;
+
+    const ultimaConsultaPorPaciente = {};
+
+    for (const consulta of consultas || []) {
+      if (
+        consulta.pacienteId &&
+        !ultimaConsultaPorPaciente[consulta.pacienteId]
+      ) {
+        ultimaConsultaPorPaciente[consulta.pacienteId] = consulta.data;
+      }
+    }
+
+    const resultado = (pacientes || []).map((paciente) =>
+      formatarPaciente(
+        paciente,
+        ultimaConsultaPorPaciente[paciente.id]
+      )
+    );
+
+    return res.json(resultado);
+  } catch (error) {
+    console.error("Erro ao listar pacientes:", error);
+
+    return res.status(500).json({
+      erro: "Não foi possível buscar os pacientes.",
+    });
+  }
+});
+
+// POST - Cadastrar paciente
+app.post("/api/pacientes", autenticarUsuario, async (req, res) => {
+  try {
+    const {
+      nome,
+      telefone,
+      email,
+      nascimento,
+      status,
+    } = req.body;
+
+    if (!nome || !nome.trim()) {
+      return res.status(400).json({
+        erro: "O nome do paciente é obrigatório.",
+      });
+    }
+
+    if (!telefone || !telefone.trim()) {
+      return res.status(400).json({
+        erro: "O telefone do paciente é obrigatório.",
+      });
+    }
+
+    if (!nascimento) {
+      return res.status(400).json({
+        erro: "A data de nascimento é obrigatória.",
+      });
+    }
+
+    const paciente = {
+      nome: nome.trim(),
+      telefone: telefone.trim(),
+      email: email?.trim() || null,
+      datanascimento: nascimento,
+      status: status === "Inativo" ? "Inativo" : "Ativo",
+    };
+
+    const { data, error } = await supabaseAdmin
+      .from("Paciente")
+      .insert(paciente)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    return res.status(201).json(formatarPaciente(data));
+  } catch (error) {
+    console.error("Erro ao cadastrar paciente:", error);
+
+    return res.status(500).json({
+      erro: "Não foi possível cadastrar o paciente.",
+    });
+  }
+});
+
+// PUT - Editar paciente
+app.put("/api/pacientes/:id", autenticarUsuario, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const {
+      nome,
+      telefone,
+      email,
+      nascimento,
+      status,
+    } = req.body;
+
+    if (!nome || !nome.trim()) {
+      return res.status(400).json({
+        erro: "O nome do paciente é obrigatório.",
+      });
+    }
+
+    if (!telefone || !telefone.trim()) {
+      return res.status(400).json({
+        erro: "O telefone do paciente é obrigatório.",
+      });
+    }
+
+    if (!nascimento) {
+      return res.status(400).json({
+        erro: "A data de nascimento é obrigatória.",
+      });
+    }
+
+    const atualizacao = {
+      nome: nome.trim(),
+      telefone: telefone.trim(),
+      email: email?.trim() || null,
+      datanascimento: nascimento,
+      status: status === "Inativo" ? "Inativo" : "Ativo",
+      atualizadoEm: new Date().toISOString(),
+    };
+
+    const { data, error } = await supabaseAdmin
+      .from("Paciente")
+      .update(atualizacao)
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    return res.json(formatarPaciente(data));
+  } catch (error) {
+    console.error("Erro ao atualizar paciente:", error);
+
+    return res.status(500).json({
+      erro: "Não foi possível atualizar o paciente.",
+    });
+  }
+});
+
+// DELETE - Excluir paciente
+app.delete("/api/pacientes/:id", autenticarUsuario, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const { error } = await supabaseAdmin
+      .from("Paciente")
+      .delete()
+      .eq("id", id);
+
+    if (error) {
+      // Pode acontecer quando o paciente possui consultas ou orçamentos vinculados
+      if (error.code === "23503") {
+        return res.status(409).json({
+          erro:
+            "Este paciente possui consultas ou orçamentos vinculados. Remova ou altere esses vínculos antes de excluir.",
+        });
+      }
+
+      throw error;
+    }
+
+    return res.json({
+      mensagem: "Paciente excluído com sucesso.",
+    });
+  } catch (error) {
+    console.error("Erro ao excluir paciente:", error);
+
+    return res.status(500).json({
+      erro: "Não foi possível excluir o paciente.",
+    });
+  }
+});
