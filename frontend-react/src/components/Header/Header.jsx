@@ -1,8 +1,16 @@
-import { Menu } from "lucide-react";
+
+import { Menu, CircleUserRound } from "lucide-react";
 
 import "./Header.css";
 
-function Header({ onMenuClick }) {
+function Header({ onMenuClick, usuario }) {
+  const perfis = {
+    ADMIN: "Administrador",
+    DENTISTA: "Dentista",
+    SECRETARIA: "Secretária",
+    RECEPCIONISTA: "Recepcionista",
+  };
+
   return (
     <header className="header">
       <div className="header-left">
@@ -24,13 +32,12 @@ function Header({ onMenuClick }) {
       <div className="header-right">
         <div className="header-user">
           <div className="user-info">
-            <strong>Dr(a). Dentista</strong>
-
-            <span>Administrador</span>
+            <strong>{usuario?.nome || "Usuário"}</strong>
+            <span>{perfis[usuario?.perfil] || "Perfil"}</span>
           </div>
 
           <div className="user-avatar">
-            DD
+            <CircleUserRound size={34} strokeWidth={1.7} />
           </div>
         </div>
       </div>

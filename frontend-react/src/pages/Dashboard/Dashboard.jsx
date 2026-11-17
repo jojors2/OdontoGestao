@@ -27,7 +27,10 @@ function Dashboard() {
     async function carregarDashboard() {
       try {
         setLoading(true);
-        const res = await fetch("http://localhost:3001/api/dashboard");
+        const res = await fetch("http://localhost:3001/api/dashboard", {
+          method: "GET",
+          credentials: "include",
+        });;
         if (res.ok) {
           const dados = await res.json();
           setStats(dados);

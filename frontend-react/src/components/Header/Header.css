@@ -244,3 +244,14 @@
     font-size: 12px;
   }
 }
+
+.user-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #e3f2fd;
+  color: #0d47a1;
+}

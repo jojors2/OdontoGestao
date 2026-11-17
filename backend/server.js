@@ -1,45 +1,110 @@
+require("dotenv").config();
+
 const express = require("express");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
-const bcrypt = require("bcrypt");
-const jwt = require("jsonwebtoken");
-const { PrismaClient } = require("@prisma/client");
-require("dotenv").config();
+const { createClient } = require("@supabase/supabase-js");
 
 const app = express();
-const prisma = new PrismaClient();
 
-// ==========================================
-// MIDDLEWARE DE AUTENTICAÇÃO
-// ==========================================
+const {
+  SUPABASE_URL,
+  SUPABASE_ANON_KEY,
+  SUPABASE_SERVICE_ROLE_KEY,
+  PORT = 3001,
+  NODE_ENV = "development",
+} = process.env;
+
+if (!SUPABASE_URL || !SUPABASE_ANON_KEY || !SUPABASE_SERVICE_ROLE_KEY) {
+  throw new Error(
+    "Configure SUPABASE_URL, SUPABASE_ANON_KEY e SUPABASE_SERVICE_ROLE_KEY no .env."
+  );
+}
+
+const supabaseAuth = createClient(
+  SUPABASE_URL,
+  SUPABASE_ANON_KEY,
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  }
+);
+
+const supabaseAdmin = createClient(
+  SUPABASE_URL,
+  SUPABASE_SERVICE_ROLE_KEY,
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  }
+);
+
+console.log("URL do Supabase:", SUPABASE_URL);
+
+app.use(cors({
+  origin: "http://localhost:5173",
+  credentials: true,
+}));
+
+app.use(express.json());
+app.use(cookieParser());
+
+const COOKIE_NAME = "odontogestao_token";
+
+const COOKIE_OPTIONS = {
+  httpOnly: true,
+  secure: NODE_ENV === "production",
+  sameSite: "lax",
+  path: "/",
+  maxAge: 8 * 60 * 60 * 1000,
+};
+
+function enviarErro(res, error, mensagem, status = 500) {
+  console.error(mensagem, error);
+  return res.status(status).json({ erro: mensagem });
+}
+
+function converterId(id) {
+  if (id === undefined || id === null || id === "") return null;
+
+  const numero = Number(id);
+  return Number.isNaN(numero) ? id : numero;
+}
+
+// AUTENTICAÇÃO
 
 async function autenticarUsuario(req, res, next) {
   try {
-    // Recupera o token armazenado no cookie
-    const token = req.cookies.odontogestao_token;
+    const token =
+      req.cookies[COOKIE_NAME] ||
+      (req.headers.authorization || "").replace(/^Bearer\s+/i, "");
 
     if (!token) {
       return res.status(401).json({
-        erro: "Você precisa fazer login para acessar esta área.",
+        erro: "Você precisa fazer login.",
       });
     }
 
-    // Verifica se o token é válido
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const { data, error } = await supabaseAdmin.auth.getUser(token);
 
-    // Busca o usuário no banco
-    const usuario = await prisma.usuario.findUnique({
-      where: {
-        id: Number(decoded.sub),
-      },
-      select: {
-        id: true,
-        nome: true,
-        email: true,
-        perfil: true,
-        cro: true,
-      },
-    });
+    if (error || !data.user) {
+      return res.status(401).json({
+        erro: "Sessão inválida ou expirada.",
+      });
+    }
+
+    const { data: usuario, error: usuarioError } =
+      await supabaseAdmin
+        .from("Usuario")
+        .select("id, nome, email, perfil, cro")
+        .eq("id", data.user.id)
+        .maybeSingle();
+
+    if (usuarioError) throw usuarioError;
 
     if (!usuario) {
       return res.status(401).json({
@@ -47,27 +112,31 @@ async function autenticarUsuario(req, res, next) {
       });
     }
 
-    // Disponibiliza os dados para as próximas rotas
     req.usuario = usuario;
+    req.accessToken = token;
 
     next();
 
   } catch (error) {
-    return res.status(401).json({
-      erro: "Sessão inválida ou expirada. Faça login novamente.",
-    });
+    return enviarErro(
+      res,
+      error,
+      "Erro ao validar sessão.",
+      401
+    );
   }
 }
 
-// ==========================================
-// MIDDLEWARE DE AUTORIZAÇÃO
-// ==========================================
+// CONTROLE DE PERMISSÕES
 
 function permitirPerfis(...perfisPermitidos) {
   return (req, res, next) => {
-    if (!perfisPermitidos.includes(req.usuario.perfil)) {
+    if (
+      !req.usuario ||
+      !perfisPermitidos.includes(req.usuario.perfil)
+    ) {
       return res.status(403).json({
-        erro: "Você não tem permissão para realizar esta ação.",
+        erro: "Você não tem permissão para esta ação.",
       });
     }
 
@@ -75,122 +144,141 @@ function permitirPerfis(...perfisPermitidos) {
   };
 }
 
-// Permite que o frontend converse com este backend
-app.use(
-  cors({
-    origin: "http://localhost:5173",
-    credentials: true 
-  })
-);
+// RELACIONAMENTO COM PACIENTES
 
-// Permite que o Express receba dados enviados no formato JSON
-app.use(express.json());
-app.use(cookieParser());
-// ==========================================
-// ROTA DE STATUS / TESTE
-// ==========================================
-app.get("/", (req, res) => {
-  res.json({ mensagem: "API do OdontoGestão conectada ao banco de dados com sucesso! 🚀" });
+async function anexarPaciente(registros) {
+  const lista = Array.isArray(registros)
+    ? registros
+    : [registros];
+
+  const ids = [
+    ...new Set(
+      lista
+        .map((item) => item.pacienteId)
+        .filter(Boolean)
+    ),
+  ];
+
+  if (ids.length === 0) {
+    const resultado = lista.map((item) => ({
+      ...item,
+      paciente: "Paciente",
+      pacienteObj: null,
+    }));
+
+    return Array.isArray(registros)
+      ? resultado
+      : resultado[0];
+  }
+
+  const { data: pacientes, error } = await supabaseAdmin
+    .from("Paciente")
+    .select("id, nome, telefone, email")
+    .in("id", ids);
+
+  if (error) throw error;
+
+  const mapa = new Map(
+    (pacientes || []).map((p) => [String(p.id), p])
+  );
+
+  const resultado = lista.map((item) => {
+    const paciente = mapa.get(String(item.pacienteId)) || null;
+
+    return {
+      ...item,
+      paciente: paciente?.nome || "Paciente",
+      pacienteObj: paciente,
+    };
+  });
+
+  return Array.isArray(registros)
+    ? resultado
+    : resultado[0];
+}
+
+// ROTA INICIAL
+
+app.get("/", (_req, res) => {
+  res.json({
+    mensagem: "API do OdontoGestão conectada ao Supabase!",
+  });
 });
 
-// ==========================================
-// AUTENTICAÇÃO / LOGIN & USUÁRIOS
-// ==========================================
+// LOGIN
+
 app.post("/api/login", async (req, res) => {
   try {
-    const { email, senha } = req.body;
+    const { email, senha } = req.body || {};
 
-    // Verifica se os campos foram preenchidos
     if (!email || !senha) {
       return res.status(400).json({
         erro: "E-mail e senha são obrigatórios.",
       });
     }
 
-    // Procura o usuário pelo e-mail
-    const usuario = await prisma.usuario.findUnique({
-      where: {
-        email: email.toLowerCase().trim(),
-      },
+    const { data: loginData, error: loginError } =
+      await supabaseAuth.auth.signInWithPassword({
+      email: String(email).trim().toLowerCase(),
+      password: senha,
     });
+
+    console.log("Erro Supabase Auth:", loginError);
+
+    if (
+      loginError ||
+      !loginData.user ||
+      !loginData.session
+    ) {
+      return res.status(401).json({
+        erro: "E-mail ou senha incorretos.",
+      });
+    }
+
+    const { data: usuario, error: usuarioError } =
+      await supabaseAdmin
+        .from("Usuario")
+        .select("id, nome, email, perfil, cro")
+        .eq("id", loginData.user.id)
+        .maybeSingle();
+
+    if (usuarioError) throw usuarioError;
 
     if (!usuario) {
-      return res.status(401).json({
-        erro: "E-mail ou senha incorretos.",
+      await supabaseAdmin.auth.admin.signOut?.(
+        loginData.session.access_token
+      );
+
+      return res.status(403).json({
+        erro: "Usuário não cadastrado na clínica.",
       });
     }
 
-    // Verifica se a senha já está criptografada com bcrypt
-    const senhaJaCriptografada = /^\$2[aby]\$/.test(usuario.senha);
-
-    let senhaValida = false;
-
-    if (senhaJaCriptografada) {
-      senhaValida = await bcrypt.compare(senha, usuario.senha);
-    } else {
-      // Compatibilidade temporária com senhas antigas
-      senhaValida = usuario.senha === senha;
-
-      // Se a senha antiga estiver correta, atualiza para hash
-      if (senhaValida) {
-        const senhaHash = await bcrypt.hash(senha, 12);
-
-        await prisma.usuario.update({
-          where: { id: usuario.id },
-          data: { senha: senhaHash },
-        });
-      }
-    }
-
-    if (!senhaValida) {
-      return res.status(401).json({
-        erro: "E-mail ou senha incorretos.",
-      });
-    }
-
-    // Gera o token de autenticação
-    const token = jwt.sign(
-      {
-        perfil: usuario.perfil,
-      },
-      process.env.JWT_SECRET,
-      {
-        subject: String(usuario.id),
-        expiresIn: "8h",
-      }
+    res.cookie(
+      COOKIE_NAME,
+      loginData.session.access_token,
+      COOKIE_OPTIONS
     );
 
-    // Guarda o token em um cookie protegido
-    res.cookie("odontogestao_token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 8 * 60 * 60 * 1000,
-    });
-
-    // Retorna os dados do usuário, sem a senha
-    return res.json({
-      id: usuario.id,
-      nome: usuario.nome,
-      email: usuario.email,
-      perfil: usuario.perfil,
-      cro: usuario.cro,
-    });
+    return res.json(usuario);
 
   } catch (error) {
-    console.error("Erro no login:", error);
-
-    return res.status(500).json({
-      erro: "Erro interno no servidor ao tentar fazer login.",
-    });
+    return enviarErro(
+      res,
+      error,
+      "Erro ao realizar login."
+    );
   }
 });
 
-app.post("/api/logout", (req, res) => {
-  res.clearCookie("odontogestao_token", {
+// LOGOUT
+
+app.post("/api/logout", (_req, res) => {
+  res.clearCookie(COOKIE_NAME, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: NODE_ENV === "production",
     sameSite: "lax",
+    path: "/",
   });
 
   return res.json({
@@ -198,13 +286,50 @@ app.post("/api/logout", (req, res) => {
   });
 });
 
+// USUÁRIO LOGADO
+
+app.get(
+  "/api/usuarios/me",
+  autenticarUsuario,
+  (req, res) => {
+    res.json(req.usuario);
+  }
+);
+
+// LISTAR USUÁRIOS
+
+app.get(
+  "/api/usuarios",
+  autenticarUsuario,
+  permitirPerfis("ADMIN"),
+  async (_req, res) => {
+    try {
+      const { data, error } = await supabaseAdmin
+        .from("Usuario")
+        .select("id, nome, email, perfil, cro, criadoEm, atualizadoEm")
+        .order("nome", { ascending: true });
+
+      if (error) throw error;
+
+      res.json(data || []);
+
+    } catch (error) {
+      enviarErro(res, error, "Erro ao listar usuários.");
+    }
+  }
+);
+
+// CADASTRAR USUÁRIO
+
 app.post(
   "/api/usuarios",
   autenticarUsuario,
   permitirPerfis("ADMIN"),
   async (req, res) => {
+    let authUserId = null;
+
     try {
-      const { nome, email, senha, perfil, cro } = req.body;
+      const { nome, email, senha, perfil, cro } = req.body || {};
 
       if (!nome || !email || !senha) {
         return res.status(400).json({
@@ -212,628 +337,216 @@ app.post(
         });
       }
 
-      if (senha.length < 8) {
+      if (String(senha).length < 8) {
         return res.status(400).json({
           erro: "A senha deve ter pelo menos 8 caracteres.",
         });
       }
 
-      const emailNormalizado = email.toLowerCase().trim();
+      const perfisPermitidos = [
+        "ADMIN",
+        "DENTISTA",
+        "SECRETARIA",
+        "RECEPCIONISTA",
+      ];
 
-      const usuarioExistente = await prisma.usuario.findUnique({
-        where: { email: emailNormalizado },
-      });
+      const perfilFinal = perfil || "RECEPCIONISTA";
 
-      if (usuarioExistente) {
+      if (!perfisPermitidos.includes(perfilFinal)) {
         return res.status(400).json({
-          erro: "Este e-mail já está cadastrado.",
+          erro: "Perfil inválido.",
         });
       }
 
-      // Criptografa a senha antes de salvar
-      const senhaHash = await bcrypt.hash(senha, 12);
+      const emailNormalizado = String(email)
+        .trim()
+        .toLowerCase();
 
-      const novoUsuario = await prisma.usuario.create({
-        data: {
-          nome,
+      const { data: existente, error: consultaError } =
+        await supabaseAdmin
+          .from("Usuario")
+          .select("id")
+          .eq("email", emailNormalizado)
+          .maybeSingle();
+
+      if (consultaError) throw consultaError;
+
+      if (existente) {
+        return res.status(409).json({
+          erro: "E-mail já cadastrado.",
+        });
+      }
+
+      const { data: authData, error: authError } =
+        await supabaseAdmin.auth.admin.createUser({
           email: emailNormalizado,
-          senha: senhaHash,
-          perfil: perfil || "RECEPCIONISTA",
-          cro: cro || null,
-        },
-      });
+          password: senha,
+          email_confirm: true,
+        });
 
-      return res.status(201).json({
-        id: novoUsuario.id,
-        nome: novoUsuario.nome,
-        email: novoUsuario.email,
-        perfil: novoUsuario.perfil,
-      });
+      if (authError) throw authError;
+
+      authUserId = authData.user.id;
+
+      const { data: novoUsuario, error: insertError } =
+        await supabaseAdmin
+          .from("Usuario")
+          .insert({
+            id: authUserId,
+            nome: String(nome).trim(),
+            email: emailNormalizado,
+            perfil: perfilFinal,
+            cro: cro || null,
+          })
+          .select("id, nome, email, perfil, cro, criadoEm, atualizadoEm")
+          .single();
+
+      if (insertError) throw insertError;
+
+      return res.status(201).json(novoUsuario);
+
     } catch (error) {
-      console.error("Erro ao criar usuário:", error);
+      if (authUserId) {
+        await supabaseAdmin.auth.admin.deleteUser(authUserId);
+      }
 
-      return res.status(500).json({
-        erro: "Erro ao cadastrar usuário.",
-      });
+      return enviarErro(
+        res,
+        error,
+        "Erro ao cadastrar usuário."
+      );
     }
   }
 );
 
-// ==========================================
-// ROTAS DE PACIENTES (CRUD)
-// ==========================================
-app.get("/api/pacientes", async (req, res) => {
-  try {
-    const pacientes = await prisma.paciente.findMany({
-      orderBy: { id: "desc" },
-      include: {
-        _count: {
-          select: { consultas: true, orcamentos: true },
-        },
-      },
-    });
-    res.json(pacientes);
-  } catch (error) {
-    console.error("Erro ao listar pacientes:", error);
-    res.status(500).json({ erro: "Erro ao buscar pacientes no banco de dados." });
-  }
+app.listen(PORT, () => {
+  console.log(`Servidor rodando na porta ${PORT}`);
 });
 
-app.post("/api/pacientes", async (req, res) => {
-  try {
-    const { nome, telefone, email, nascimento, status } = req.body;
 
-    if (!nome || !telefone) {
-      return res.status(400).json({ erro: "Nome e telefone são obrigatórios." });
-    }
+// DASHBOARD
+app.get(
+  "/api/dashboard",
+  autenticarUsuario,
+  async (_req, res) => {
+    try {
+      // Data atual no fuso horário local
+      const agora = new Date();
 
-    const novoPaciente = await prisma.paciente.create({
-      data: {
-        nome,
-        telefone,
-        email: email || null,
-        nascimento: nascimento || null,
-        status: status || "Ativo",
-      },
-    });
+      const formatarData = (data) => {
+        const ano = data.getFullYear();
+        const mes = String(data.getMonth() + 1).padStart(2, "0");
+        const dia = String(data.getDate()).padStart(2, "0");
 
-    res.status(201).json(novoPaciente);
-  } catch (error) {
-    console.error("Erro ao criar paciente:", error);
-    res.status(500).json({ erro: "Erro ao salvar paciente no banco de dados." });
-  }
-});
+        return `${ano}-${mes}-${dia}`;
+      };
 
-app.put("/api/pacientes/:id", async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { nome, telefone, email, nascimento, status } = req.body;
+      const hoje = formatarData(agora);
 
-    const pacienteAtualizado = await prisma.paciente.update({
-      where: { id: Number(id) },
-      data: {
-        nome,
-        telefone,
-        email,
-        nascimento,
-        status,
-      },
-    });
+      const amanhaData = new Date(agora);
+      amanhaData.setDate(amanhaData.getDate() + 1);
 
-    res.json(pacienteAtualizado);
-  } catch (error) {
-    console.error("Erro ao atualizar paciente:", error);
-    res.status(500).json({ erro: "Erro ao atualizar dados do paciente." });
-  }
-});
+      const amanha = formatarData(amanhaData);
 
-app.delete("/api/pacientes/:id", async (req, res) => {
-  try {
-    const { id } = req.params;
+      // Total de pacientes
+      const { count: totalPacientes, error: pacientesError } =
+        await supabaseAdmin
+          .from("Paciente")
+          .select("*", { count: "exact", head: true });
 
-    await prisma.paciente.delete({
-      where: { id: Number(id) },
-    });
+      if (pacientesError) throw pacientesError;
 
-    res.json({ mensagem: "Paciente removido com sucesso!" });
-  } catch (error) {
-    console.error("Erro ao deletar paciente:", error);
-    res.status(500).json({ erro: "Erro ao excluir paciente." });
-  }
-});
+      // Total de consultas
+      const { count: totalConsultas, error: totalConsultasError } =
+        await supabaseAdmin
+          .from("Consulta")
+          .select("*", { count: "exact", head: true });
 
-// ==========================================
-// ROTAS DE CONSULTAS (CRUD)
-// ==========================================
-app.get("/api/consultas", async (req, res) => {
-  try {
-    const { data } = req.query;
-    const where = data ? { data } : {};
+      if (totalConsultasError) throw totalConsultasError;
 
-    const consultas = await prisma.consulta.findMany({
-      where,
-      orderBy: [{ data: "asc" }, { horario: "asc" }],
-      include: {
-        paciente: {
-          select: { id: true, nome: true, telefone: true, email: true },
-        },
-      },
-    });
+      // Consultas de hoje
+      const { data: consultasHoje, error: consultasHojeError } =
+        await supabaseAdmin
+          .from("Consulta")
+          .select("id, pacienteId, data, horario, procedimento, status")
+          .gte("data", hoje)
+          .lt("data", amanha)
+          .order("horario", { ascending: true });
 
-    // Mapeia para incluir tanto paciente.nome quanto campo paciente direto para compatibilidade
-    const consultasFormatadas = consultas.map((c) => ({
-      ...c,
-      paciente: c.paciente?.nome || "Paciente",
-      pacienteObj: c.paciente,
-    }));
+      if (consultasHojeError) throw consultasHojeError;
 
-    res.json(consultasFormatadas);
-  } catch (error) {
-    console.error("Erro ao listar consultas:", error);
-    res.status(500).json({ erro: "Erro ao buscar consultas." });
-  }
-});
+      // Orçamentos pendentes
+      const { count: totalOrcamentos, error: orcamentosError } =
+        await supabaseAdmin
+          .from("Orcamento")
+          .select("*", { count: "exact", head: true })
+          .ilike("status", "pendente");
 
-app.post("/api/consultas", async (req, res) => {
-  try {
-    let { pacienteId, paciente, pacienteNome, data, horario, duracao, procedimento, observacoes, status } = req.body;
+      if (orcamentosError) throw orcamentosError;
 
-    if (!data || !horario || !procedimento) {
-      return res.status(400).json({ erro: "Data, horário e procedimento são obrigatórios." });
-    }
+      // Lembretes pendentes
+      const { count: lembretesPendentes, error: lembretesError } =
+        await supabaseAdmin
+          .from("Lembrete")
+          .select("*", { count: "exact", head: true })
+          .ilike("status", "pendente");
 
-    const nomeBusca = pacienteNome || (typeof paciente === "string" ? paciente : null);
+      if (lembretesError) throw lembretesError;
 
-    if (!pacienteId && nomeBusca) {
-      let p = await prisma.paciente.findFirst({
-        where: { nome: { contains: nomeBusca } },
+      // Próximas consultas (hoje e datas futuras)
+      const { data: proximasConsultas, error: proximasError } =
+        await supabaseAdmin
+          .from("Consulta")
+          .select("id, pacienteId, data, horario, procedimento, status")
+          .gte("data", hoje)
+          .order("data", { ascending: true })
+          .order("horario", { ascending: true })
+          .limit(5);
+
+      if (proximasError) throw proximasError;
+
+      // Adiciona o nome do paciente às consultas
+      const consultasComPaciente = await anexarPaciente(
+        proximasConsultas || []
+      );
+
+      // Calcula o resumo dos atendimentos de hoje
+      const resumoHoje = {
+        concluidas: 0,
+        agendadas: 0,
+        canceladas: 0,
+      };
+
+      (consultasHoje || []).forEach((consulta) => {
+        const status = String(consulta.status || "")
+          .trim()
+          .toLowerCase();
+
+        if (status === "concluída" || status === "concluida") {
+          resumoHoje.concluidas++;
+        } else if (status === "cancelada") {
+          resumoHoje.canceladas++;
+        } else {
+          resumoHoje.agendadas++;
+        }
       });
-      if (!p) {
-        p = await prisma.paciente.create({
-          data: { nome: nomeBusca, telefone: "Não informado", status: "Ativo" },
-        });
-      }
-      pacienteId = p.id;
-    }
 
-    if (!pacienteId) {
-      const primeiro = await prisma.paciente.findFirst();
-      if (primeiro) {
-        pacienteId = primeiro.id;
-      } else {
-        const novo = await prisma.paciente.create({
-          data: { nome: "Paciente Geral", telefone: "Não informado" },
-        });
-        pacienteId = novo.id;
-      }
-    }
-
-    const novaConsulta = await prisma.consulta.create({
-      data: {
-        pacienteId: Number(pacienteId),
-        data,
-        horario,
-        duracao: duracao || "30",
-        procedimento,
-        observacoes: observacoes || null,
-        status: status || "Agendada",
-      },
-      include: {
-        paciente: {
-          select: { id: true, nome: true, telefone: true },
-        },
-      },
-    });
-
-    res.status(201).json({
-      ...novaConsulta,
-      paciente: novaConsulta.paciente?.nome || "Paciente",
-      pacienteObj: novaConsulta.paciente,
-    });
-  } catch (error) {
-    console.error("Erro ao criar consulta:", error);
-    res.status(500).json({ erro: "Erro ao agendar consulta." });
-  }
-});
-
-app.put("/api/consultas/:id", async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { pacienteId, data, horario, duracao, procedimento, observacoes, status } = req.body;
-
-    const consultaAtualizada = await prisma.consulta.update({
-      where: { id: Number(id) },
-      data: {
-        ...(pacienteId ? { pacienteId: Number(pacienteId) } : {}),
-        data,
-        horario,
-        duracao,
-        procedimento,
-        observacoes,
-        status,
-      },
-      include: {
-        paciente: {
-          select: { id: true, nome: true, telefone: true },
-        },
-      },
-    });
-
-    res.json({
-      ...consultaAtualizada,
-      paciente: consultaAtualizada.paciente?.nome || "Paciente",
-      pacienteObj: consultaAtualizada.paciente,
-    });
-  } catch (error) {
-    console.error("Erro ao atualizar consulta:", error);
-    res.status(500).json({ erro: "Erro ao atualizar consulta." });
-  }
-});
-
-app.delete("/api/consultas/:id", async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    await prisma.consulta.delete({
-      where: { id: Number(id) },
-    });
-
-    res.json({ mensagem: "Consulta removida com sucesso!" });
-  } catch (error) {
-    console.error("Erro ao deletar consulta:", error);
-    res.status(500).json({ erro: "Erro ao cancelar consulta." });
-  }
-});
-
-// ==========================================
-// ROTAS DE ORÇAMENTOS (CRUD)
-// ==========================================
-app.get("/api/orcamentos", async (req, res) => {
-  try {
-    const orcamentos = await prisma.orcamento.findMany({
-      orderBy: { id: "desc" },
-      include: {
-        paciente: {
-          select: { id: true, nome: true, telefone: true },
-        },
-      },
-    });
-
-    const orcamentosFormatados = orcamentos.map((o) => ({
-      ...o,
-      paciente: o.paciente?.nome || "Paciente",
-      pacienteObj: o.paciente,
-    }));
-
-    res.json(orcamentosFormatados);
-  } catch (error) {
-    console.error("Erro ao listar orçamentos:", error);
-    res.status(500).json({ erro: "Erro ao buscar orçamentos." });
-  }
-});
-
-app.post("/api/orcamentos", async (req, res) => {
-  try {
-    let { pacienteId, paciente, pacienteNome, procedimento, valor, data, status, observacoes } = req.body;
-
-    if (!procedimento || valor === undefined || !data) {
-      return res.status(400).json({ erro: "Procedimento, valor e data são obrigatórios." });
-    }
-
-    const nomeBusca = pacienteNome || (typeof paciente === "string" ? paciente : null);
-
-    if (!pacienteId && nomeBusca) {
-      let p = await prisma.paciente.findFirst({
-        where: { nome: { contains: nomeBusca } },
+      return res.json({
+        totalPacientes: totalPacientes || 0,
+        consultasHoje: (consultasHoje || []).length,
+        totalConsultas: totalConsultas || 0,
+        totalOrcamentos: totalOrcamentos || 0,
+        lembretesPendentes: lembretesPendentes || 0,
+        proximasConsultas: consultasComPaciente,
+        resumoHoje,
       });
-      if (!p) {
-        p = await prisma.paciente.create({
-          data: { nome: nomeBusca, telefone: "Não informado", status: "Ativo" },
-        });
-      }
-      pacienteId = p.id;
+
+    } catch (error) {
+      return enviarErro(
+        res,
+        error,
+        "Erro ao carregar dados do dashboard."
+      );
     }
-
-    if (!pacienteId) {
-      const primeiro = await prisma.paciente.findFirst();
-      if (primeiro) {
-        pacienteId = primeiro.id;
-      } else {
-        const novo = await prisma.paciente.create({
-          data: { nome: "Paciente Geral", telefone: "Não informado" },
-        });
-        pacienteId = novo.id;
-      }
-    }
-
-    const novoOrcamento = await prisma.orcamento.create({
-      data: {
-        pacienteId: Number(pacienteId),
-        procedimento,
-        valor: parseFloat(valor),
-        data: String(data),
-        status: status || "Pendente",
-        observacoes: observacoes || null,
-      },
-      include: {
-        paciente: {
-          select: { id: true, nome: true },
-        },
-      },
-    });
-
-    res.status(201).json({
-      ...novoOrcamento,
-      paciente: novoOrcamento.paciente?.nome || "Paciente",
-      pacienteObj: novoOrcamento.paciente,
-    });
-  } catch (error) {
-    console.error("Erro ao criar orçamento:", error);
-    res.status(500).json({ erro: "Erro ao salvar orçamento." });
   }
-});
-
-app.put("/api/orcamentos/:id", async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { pacienteId, procedimento, valor, data, status, observacoes } = req.body;
-
-    const orcamentoAtualizado = await prisma.orcamento.update({
-      where: { id: Number(id) },
-      data: {
-        ...(pacienteId ? { pacienteId: Number(pacienteId) } : {}),
-        procedimento,
-        valor: valor !== undefined ? parseFloat(valor) : undefined,
-        data,
-        status,
-        observacoes,
-      },
-      include: {
-        paciente: {
-          select: { id: true, nome: true },
-        },
-      },
-    });
-
-    res.json({
-      ...orcamentoAtualizado,
-      paciente: orcamentoAtualizado.paciente?.nome || "Paciente",
-      pacienteObj: orcamentoAtualizado.paciente,
-    });
-  } catch (error) {
-    console.error("Erro ao atualizar orçamento:", error);
-    res.status(500).json({ erro: "Erro ao atualizar orçamento." });
-  }
-});
-
-app.delete("/api/orcamentos/:id", async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    await prisma.orcamento.delete({
-      where: { id: Number(id) },
-    });
-
-    res.json({ mensagem: "Orçamento removido com sucesso!" });
-  } catch (error) {
-    console.error("Erro ao deletar orçamento:", error);
-    res.status(500).json({ erro: "Erro ao excluir orçamento." });
-  }
-});
-
-// ==========================================
-// ROTAS DE LEMBRETES (CRUD)
-// ==========================================
-app.get("/api/lembretes", async (req, res) => {
-  try {
-    const lembretes = await prisma.lembrete.findMany({
-      orderBy: { id: "desc" },
-    });
-    res.json(lembretes);
-  } catch (error) {
-    console.error("Erro ao listar lembretes:", error);
-    res.status(500).json({ erro: "Erro ao buscar lembretes." });
-  }
-});
-
-app.post("/api/lembretes", async (req, res) => {
-  try {
-    const { titulo, descricao, paciente, data, hora, prioridade, concluido } = req.body;
-
-    if (!titulo || !data) {
-      return res.status(400).json({ erro: "Título e data são obrigatórios." });
-    }
-
-    const novoLembrete = await prisma.lembrete.create({
-      data: {
-        titulo,
-        descricao: descricao || null,
-        paciente: paciente || null,
-        data,
-        hora: hora || null,
-        prioridade: prioridade || "Média",
-        concluido: Boolean(concluido),
-      },
-    });
-
-    res.status(201).json(novoLembrete);
-  } catch (error) {
-    console.error("Erro ao criar lembrete:", error);
-    res.status(500).json({ erro: "Erro ao salvar lembrete." });
-  }
-});
-
-app.put("/api/lembretes/:id", async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { titulo, descricao, paciente, data, hora, prioridade, concluido } = req.body;
-
-    const lembreteAtualizado = await prisma.lembrete.update({
-      where: { id: Number(id) },
-      data: {
-        titulo,
-        descricao,
-        paciente,
-        data,
-        hora,
-        prioridade,
-        concluido: concluido !== undefined ? Boolean(concluido) : undefined,
-      },
-    });
-
-    res.json(lembreteAtualizado);
-  } catch (error) {
-    console.error("Erro ao atualizar lembrete:", error);
-    res.status(500).json({ erro: "Erro ao atualizar lembrete." });
-  }
-});
-
-app.patch("/api/lembretes/:id/toggle", async (req, res) => {
-  try {
-    const { id } = req.params;
-    const lembrete = await prisma.lembrete.findUnique({
-      where: { id: Number(id) },
-    });
-
-    if (!lembrete) {
-      return res.status(404).json({ erro: "Lembrete não encontrado." });
-    }
-
-    const atualizado = await prisma.lembrete.update({
-      where: { id: Number(id) },
-      data: { concluido: !lembrete.concluido },
-    });
-
-    res.json(atualizado);
-  } catch (error) {
-    console.error("Erro ao alterar status do lembrete:", error);
-    res.status(500).json({ erro: "Erro ao alternar conclusão do lembrete." });
-  }
-});
-
-app.delete("/api/lembretes/:id", async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    await prisma.lembrete.delete({
-      where: { id: Number(id) },
-    });
-
-    res.json({ mensagem: "Lembrete removido com sucesso!" });
-  } catch (error) {
-    console.error("Erro ao deletar lembrete:", error);
-    res.status(500).json({ erro: "Erro ao excluir lembrete." });
-  }
-});
-
-// ==========================================
-// ROTAS DE CONFIGURAÇÃO DA CLÍNICA
-// ==========================================
-app.get("/api/configuracoes", async (req, res) => {
-  try {
-    const config = await prisma.configuracao.findFirst();
-
-    if (!config) {
-      return res.json(null);
-    }
-
-    res.json(config);
-  } catch (error) {
-    console.error("Erro ao buscar configurações:", error);
-    res.status(500).json({ erro: "Erro ao buscar configurações." });
-  }
-});
-
-app.put("/api/configuracoes", async (req, res) => {
-  try {
-    let config = await prisma.configuracao.findFirst();
-    const dados = req.body;
-
-    if (!config) {
-      config = await prisma.configuracao.create({ data: dados });
-    } else {
-      config = await prisma.configuracao.update({
-        where: { id: config.id },
-        data: dados,
-      });
-    }
-
-    res.json(config);
-  } catch (error) {
-    console.error("Erro ao salvar configurações:", error);
-    res.status(500).json({ erro: "Erro ao salvar configurações." });
-  }
-});
-
-// ==========================================
-// ROTA DO DASHBOARD (Estatísticas e Resumo)
-// ==========================================
-app.get("/api/dashboard", async (req, res) => {
-  try {
-    const hojeStr = new Date().toISOString().slice(0, 10);
-
-    const [
-      totalPacientes,
-      consultasHoje,
-      totalConsultas,
-      totalOrcamentos,
-      lembretesPendentes,
-      proximasConsultas,
-      consultasConcluidas,
-      consultasAgendadas,
-      consultasCanceladas,
-    ] = await Promise.all([
-      prisma.paciente.count({ where: { status: "Ativo" } }),
-      prisma.consulta.count({ where: { data: hojeStr } }),
-      prisma.consulta.count(),
-      prisma.orcamento.count({ where: { status: "Pendente" } }),
-      prisma.lembrete.count({ where: { concluido: false } }),
-      prisma.consulta.findMany({
-        where: { data: { gte: hojeStr } },
-        orderBy: [{ data: "asc" }, { horario: "asc" }],
-        take: 5,
-        include: { paciente: { select: { id: true, nome: true } } },
-      }),
-      prisma.consulta.count({ where: { data: hojeStr, status: "Concluída" } }),
-      prisma.consulta.count({ where: { data: hojeStr, status: { in: ["Agendada", "Confirmada"] } } }),
-      prisma.consulta.count({ where: { data: hojeStr, status: "Cancelada" } }),
-    ]);
-
-    const formatadas = proximasConsultas.map((c) => ({
-      id: c.id,
-      horario: c.horario,
-      paciente: c.paciente?.nome || "Paciente",
-      procedimento: c.procedimento,
-      status: c.status,
-    }));
-
-    res.json({
-      totalPacientes,
-      consultasHoje,
-      totalConsultas,
-      totalOrcamentos,
-      lembretesPendentes,
-      proximasConsultas: formatadas,
-      resumoHoje: {
-        concluidas: consultasConcluidas,
-        agendadas: consultasAgendadas,
-        canceladas: consultasCanceladas,
-      },
-    });
-  } catch (error) {
-    console.error("Erro ao carregar dados do dashboard:", error);
-    res.status(500).json({ erro: "Erro ao carregar dashboard." });
-  }
-});
-
-
-
-// ==========================================
-// INICIALIZAÇÃO DO SERVIDOR
-// ==========================================
-const PORT = process.env.PORT || 3001;
-
-app.listen(PORT, async () => {
-  console.log(`🚀 Servidor rodando na porta ${PORT}`);
-  console.log(`🔗 API disponível em: http://localhost:${PORT}`);
-});
+);

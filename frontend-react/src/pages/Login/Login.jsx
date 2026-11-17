@@ -34,6 +34,7 @@ function Login() {
     try {
       const resposta = await fetch("http://localhost:3001/api/login", {
         method: "POST",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
         },
