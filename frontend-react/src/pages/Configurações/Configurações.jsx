@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 
 import {
@@ -6,7 +7,6 @@ import {
   CheckCircle2,
   Clock3,
   Save,
-  Settings,
   UserRound,
 } from "lucide-react";
 
@@ -91,7 +91,7 @@ function Configuracoes() {
 
     console.log("Configurações:", configuracoes);
 
-    setMensagem("Configurações salvas com sucesso!");
+    setMensagem("Configurações salvas temporariamente!");
 
     setTimeout(() => {
       setMensagem("");
@@ -100,14 +100,10 @@ function Configuracoes() {
 
   return (
     <div className="configuracoes-page">
-      {/* TOPO */}
       <div className="configuracoes-topo">
         <div className="configuracoes-titulo">
-          
-
           <div>
             <h1>Configurações</h1>
-
             <p>
               Gerencie os dados da clínica e as preferências do sistema.
             </p>
@@ -120,16 +116,13 @@ function Configuracoes() {
           className="configuracoes-salvar"
         >
           <Save size={18} />
-
           <span>Salvar alterações</span>
         </button>
       </div>
 
-      {/* MENSAGEM */}
       {mensagem && (
         <div className="configuracoes-mensagem">
           <CheckCircle2 size={19} />
-
           <span>{mensagem}</span>
         </div>
       )}
@@ -139,7 +132,6 @@ function Configuracoes() {
         onSubmit={salvarConfiguracoes}
         className="configuracoes-grid"
       >
-        {/* DADOS PROFISSIONAIS */}
         <section className="configuracoes-card">
           <div className="configuracoes-card-header">
             <div className="configuracoes-card-icon">
@@ -148,17 +140,13 @@ function Configuracoes() {
 
             <div>
               <h2>Dados profissionais</h2>
-
               <p>Informações da dentista responsável.</p>
             </div>
           </div>
 
           <div className="configuracoes-form-grid">
             <div className="configuracoes-campo campo-completo">
-              <label htmlFor="nomeProfissional">
-                Nome completo
-              </label>
-
+              <label htmlFor="nomeProfissional">Nome completo</label>
               <input
                 id="nomeProfissional"
                 type="text"
@@ -170,10 +158,7 @@ function Configuracoes() {
             </div>
 
             <div className="configuracoes-campo">
-              <label htmlFor="cro">
-                CRO
-              </label>
-
+              <label htmlFor="cro">CRO</label>
               <input
                 id="cro"
                 type="text"
@@ -185,10 +170,7 @@ function Configuracoes() {
             </div>
 
             <div className="configuracoes-campo">
-              <label htmlFor="especialidade">
-                Especialidade
-              </label>
-
+              <label htmlFor="especialidade">Especialidade</label>
               <input
                 id="especialidade"
                 type="text"
@@ -200,10 +182,7 @@ function Configuracoes() {
             </div>
 
             <div className="configuracoes-campo campo-completo">
-              <label htmlFor="telefoneProfissional">
-                Telefone
-              </label>
-
+              <label htmlFor="telefoneProfissional">Telefone</label>
               <input
                 id="telefoneProfissional"
                 type="tel"
@@ -216,7 +195,6 @@ function Configuracoes() {
           </div>
         </section>
 
-        {/* DADOS DA CLÍNICA */}
         <section className="configuracoes-card">
           <div className="configuracoes-card-header">
             <div className="configuracoes-card-icon">
@@ -225,19 +203,13 @@ function Configuracoes() {
 
             <div>
               <h2>Dados da clínica</h2>
-
-              <p>
-                Informações principais do consultório.
-              </p>
+              <p>Informações principais do consultório.</p>
             </div>
           </div>
 
           <div className="configuracoes-form-grid">
             <div className="configuracoes-campo campo-completo">
-              <label htmlFor="nomeClinica">
-                Nome da clínica
-              </label>
-
+              <label htmlFor="nomeClinica">Nome da clínica</label>
               <input
                 id="nomeClinica"
                 type="text"
@@ -249,10 +221,7 @@ function Configuracoes() {
             </div>
 
             <div className="configuracoes-campo">
-              <label htmlFor="telefoneClinica">
-                Telefone
-              </label>
-
+              <label htmlFor="telefoneClinica">Telefone</label>
               <input
                 id="telefoneClinica"
                 type="tel"
@@ -264,10 +233,7 @@ function Configuracoes() {
             </div>
 
             <div className="configuracoes-campo">
-              <label htmlFor="emailClinica">
-                E-mail
-              </label>
-
+              <label htmlFor="emailClinica">E-mail</label>
               <input
                 id="emailClinica"
                 type="email"
@@ -279,10 +245,7 @@ function Configuracoes() {
             </div>
 
             <div className="configuracoes-campo campo-completo">
-              <label htmlFor="enderecoClinica">
-                Endereço
-              </label>
-
+              <label htmlFor="enderecoClinica">Endereço</label>
               <input
                 id="enderecoClinica"
                 type="text"
@@ -295,7 +258,6 @@ function Configuracoes() {
           </div>
         </section>
 
-        {/* CONFIGURAÇÕES DA AGENDA */}
         <section className="configuracoes-card">
           <div className="configuracoes-card-header">
             <div className="configuracoes-card-icon">
@@ -304,19 +266,13 @@ function Configuracoes() {
 
             <div>
               <h2>Agenda</h2>
-
-              <p>
-                Configure os horários utilizados nos agendamentos.
-              </p>
+              <p>Configure os horários utilizados nos agendamentos.</p>
             </div>
           </div>
 
           <div className="configuracoes-form-grid">
             <div className="configuracoes-campo">
-              <label htmlFor="inicio">
-                Início do expediente
-              </label>
-
+              <label htmlFor="inicio">Início do expediente</label>
               <input
                 id="inicio"
                 type="time"
@@ -327,10 +283,7 @@ function Configuracoes() {
             </div>
 
             <div className="configuracoes-campo">
-              <label htmlFor="fim">
-                Fim do expediente
-              </label>
-
+              <label htmlFor="fim">Fim do expediente</label>
               <input
                 id="fim"
                 type="time"
@@ -341,10 +294,7 @@ function Configuracoes() {
             </div>
 
             <div className="configuracoes-campo">
-              <label htmlFor="intervaloInicio">
-                Início do intervalo
-              </label>
-
+              <label htmlFor="intervaloInicio">Início do intervalo</label>
               <input
                 id="intervaloInicio"
                 type="time"
@@ -355,10 +305,7 @@ function Configuracoes() {
             </div>
 
             <div className="configuracoes-campo">
-              <label htmlFor="intervaloFim">
-                Fim do intervalo
-              </label>
-
+              <label htmlFor="intervaloFim">Fim do intervalo</label>
               <input
                 id="intervaloFim"
                 type="time"
@@ -369,10 +316,7 @@ function Configuracoes() {
             </div>
 
             <div className="configuracoes-campo campo-completo">
-              <label htmlFor="duracao">
-                Duração padrão das consultas
-              </label>
-
+              <label htmlFor="duracao">Duração padrão das consultas</label>
               <select
                 id="duracao"
                 name="duracao"
@@ -380,22 +324,15 @@ function Configuracoes() {
                 onChange={handleAgendaChange}
               >
                 <option value="15">15 minutos</option>
-
                 <option value="30">30 minutos</option>
-
                 <option value="45">45 minutos</option>
-
                 <option value="60">1 hora</option>
-
-                <option value="90">
-                  1 hora e 30 minutos
-                </option>
+                <option value="90">1 hora e 30 minutos</option>
               </select>
             </div>
           </div>
         </section>
 
-        {/* PREFERÊNCIAS */}
         <section className="configuracoes-card">
           <div className="configuracoes-card-header">
             <div className="configuracoes-card-icon">
@@ -404,10 +341,7 @@ function Configuracoes() {
 
             <div>
               <h2>Preferências</h2>
-
-              <p>
-                Escolha como o sistema deve se comportar.
-              </p>
+              <p>Escolha como o sistema deve se comportar.</p>
             </div>
           </div>
 
@@ -415,10 +349,7 @@ function Configuracoes() {
             <div className="preferencia-item">
               <div className="preferencia-texto">
                 <strong>Lembretes de consultas</strong>
-
-                <span>
-                  Exibir lembretes para consultas próximas.
-                </span>
+                <span>Exibir lembretes para consultas próximas.</span>
               </div>
 
               <label className="config-switch">
@@ -428,7 +359,6 @@ function Configuracoes() {
                   checked={preferencias.lembretes}
                   onChange={handlePreferenciasChange}
                 />
-
                 <span className="config-slider"></span>
               </label>
             </div>
@@ -436,7 +366,6 @@ function Configuracoes() {
             <div className="preferencia-item">
               <div className="preferencia-texto">
                 <strong>Confirmação de consultas</strong>
-
                 <span>
                   Identificar consultas que ainda precisam ser confirmadas.
                 </span>
@@ -449,7 +378,6 @@ function Configuracoes() {
                   checked={preferencias.confirmacaoConsulta}
                   onChange={handlePreferenciasChange}
                 />
-
                 <span className="config-slider"></span>
               </label>
             </div>
@@ -457,7 +385,6 @@ function Configuracoes() {
             <div className="preferencia-item">
               <div className="preferencia-texto">
                 <strong>Mostrar consultas canceladas</strong>
-
                 <span>
                   Manter consultas canceladas visíveis no sistema.
                 </span>
@@ -470,7 +397,6 @@ function Configuracoes() {
                   checked={preferencias.consultasCanceladas}
                   onChange={handlePreferenciasChange}
                 />
-
                 <span className="config-slider"></span>
               </label>
             </div>
@@ -478,14 +404,12 @@ function Configuracoes() {
         </section>
       </form>
 
-      {/* BOTÃO MOBILE */}
       <button
         type="submit"
         form="configuracoes-form"
         className="configuracoes-salvar-mobile"
       >
         <Save size={18} />
-
         Salvar alterações
       </button>
     </div>

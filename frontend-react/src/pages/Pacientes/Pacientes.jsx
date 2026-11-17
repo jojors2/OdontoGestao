@@ -1,3 +1,4 @@
+
 import { useMemo, useState, useEffect } from "react";
 import {
   Search,
@@ -13,6 +14,7 @@ import {
   CalendarDays,
 } from "lucide-react";
 
+import { apiFetch } from "../../services/api";
 import "./Pacientes.css";
 
 function Pacientes() {
@@ -24,32 +26,6 @@ function Pacientes() {
   const [carregando, setCarregando] = useState(true);
   const [pacientes, setPacientes] = useState([]);
 
-  async function carregarPacientes() {
-  try {
-    setCarregando(true);
-
-    const res = await fetch("/api/pacientes", {
-      method: "GET",
-      credentials: "include",
-    });
-
-    if (!res.ok) {
-      throw new Error(`Erro ao buscar pacientes: ${res.status}`);
-    }
-
-    const dados = await res.json();
-    setPacientes(dados);
-  } catch (err) {
-    console.error("Erro ao buscar pacientes:", err);
-  } finally {
-    setCarregando(false);
-  }
-}
-
-  useEffect(() => {
-    carregarPacientes();
-  }, []);
-
   const [form, setForm] = useState({
     nome: "",
     telefone: "",
@@ -57,6 +33,31 @@ function Pacientes() {
     nascimento: "",
     status: "Ativo",
   });
+
+  async function carregarPacientes() {
+    try {
+      setCarregando(true);
+
+      const res = await apiFetch("/api/pacientes", {
+        method: "GET",
+      });
+
+      if (!res.ok) {
+        throw new Error(`Erro ao buscar pacientes: ${res.status}`);
+      }
+
+      const dados = await res.json();
+      setPacientes(dados);
+    } catch (err) {
+      console.error("Erro ao buscar pacientes:", err);
+    } finally {
+      setCarregando(false);
+    }
+  }
+
+  useEffect(() => {
+    carregarPacientes();
+  }, []);
 
   const pacientesFiltrados = useMemo(() => {
     const termo = busca.toLowerCase().trim();
@@ -101,11 +102,11 @@ function Pacientes() {
     setPacienteEditando(paciente);
 
     setForm({
-      nome: paciente.nome,
-      telefone: paciente.telefone,
-      email: paciente.email,
-      nascimento: paciente.nascimento,
-      status: paciente.status,
+      nome: paciente.nome || "",
+      telefone: paciente.telefone || "",
+      email: paciente.email || "",
+      nascimento: paciente.nascimento || "",
+      status: paciente.status || "Ativo",
     });
 
     setModalAberto(true);
@@ -130,11 +131,10 @@ function Pacientes() {
 
     try {
       if (pacienteEditando) {
-        const res = await fetch(
+        const res = await apiFetch(
           `/api/pacientes/${pacienteEditando.id}`,
           {
             method: "PUT",
-            credentials: "include",
             headers: {
               "Content-Type": "application/json",
             },
@@ -154,9 +154,8 @@ function Pacientes() {
           )
         );
       } else {
-        const res = await fetch("/api/pacientes", {
+        const res = await apiFetch("/api/pacientes", {
           method: "POST",
-          credentials: "include",
           headers: {
             "Content-Type": "application/json",
           },
@@ -187,9 +186,8 @@ function Pacientes() {
     if (!confirmar) return;
 
     try {
-      const res = await fetch(`/api/pacientes/${id}`, {
+      const res = await apiFetch(`/api/pacientes/${id}`, {
         method: "DELETE",
-        credentials: "include",
       });
 
       if (!res.ok) {
@@ -206,6 +204,8 @@ function Pacientes() {
   }
 
   function pegarIniciais(nome) {
+    if (!nome) return "P";
+
     const partes = nome.trim().split(" ");
 
     if (partes.length === 1) {
@@ -227,9 +227,6 @@ function Pacientes() {
 
   return (
     <div className="pacientes-page">
-
-      {/* CABEÇALHO */}
-
       <div className="pacientes-topo">
         <div>
           <h1>Pacientes</h1>
@@ -243,15 +240,11 @@ function Pacientes() {
           onClick={abrirNovoPaciente}
         >
           <Plus size={19} />
-
           Novo paciente
         </button>
       </div>
 
-      {/* CARDS */}
-
       <div className="pacientes-cards">
-
         <div className="pacientes-card">
           <div className="pacientes-card-icon total">
             <Users size={23} />
@@ -259,7 +252,6 @@ function Pacientes() {
 
           <div className="pacientes-card-info">
             <span>Total de pacientes</span>
-
             <strong>{pacientes.length}</strong>
           </div>
         </div>
@@ -271,7 +263,6 @@ function Pacientes() {
 
           <div className="pacientes-card-info">
             <span>Pacientes ativos</span>
-
             <strong>{totalAtivos}</strong>
           </div>
         </div>
@@ -283,22 +274,15 @@ function Pacientes() {
 
           <div className="pacientes-card-info">
             <span>Pacientes inativos</span>
-
             <strong>{totalInativos}</strong>
           </div>
         </div>
-
       </div>
 
-      {/* LISTAGEM */}
-
       <div className="pacientes-lista">
-
         <div className="pacientes-lista-header">
-
           <div>
             <h2>Lista de pacientes</h2>
-
             <p>
               Visualize e gerencie os pacientes da clínica.
             </p>
@@ -307,13 +291,9 @@ function Pacientes() {
           <span className="pacientes-quantidade">
             {pacientesFiltrados.length} pacientes
           </span>
-
         </div>
 
-        {/* FILTROS */}
-
         <div className="pacientes-filtros">
-
           <div className="pacientes-busca">
             <Search size={18} />
 
@@ -321,32 +301,23 @@ function Pacientes() {
               type="text"
               placeholder="Buscar paciente..."
               value={busca}
-              onChange={(event) =>
-                setBusca(event.target.value)
-              }
+              onChange={(event) => setBusca(event.target.value)}
             />
           </div>
 
           <select
             className="pacientes-filtro-status"
             value={filtroStatus}
-            onChange={(event) =>
-              setFiltroStatus(event.target.value)
-            }
+            onChange={(event) => setFiltroStatus(event.target.value)}
           >
             <option value="Todos">Todos</option>
             <option value="Ativo">Ativos</option>
             <option value="Inativo">Inativos</option>
           </select>
-
         </div>
 
-        {/* TABELA */}
-
         <div className="pacientes-tabela-container">
-
           <table className="pacientes-tabela">
-
             <thead>
               <tr>
                 <th>Paciente</th>
@@ -359,71 +330,54 @@ function Pacientes() {
             </thead>
 
             <tbody>
-
-              {pacientesFiltrados.length > 0 ? (
+              {carregando ? (
+                <tr>
+                  <td colSpan="6" className="pacientes-vazio">
+                    Carregando pacientes...
+                  </td>
+                </tr>
+              ) : pacientesFiltrados.length > 0 ? (
                 pacientesFiltrados.map((paciente) => (
-
                   <tr key={paciente.id}>
-
-                    {/* PACIENTE */}
-
                     <td>
                       <div className="paciente-identidade">
-
                         <div className="paciente-avatar">
                           {pegarIniciais(paciente.nome)}
                         </div>
 
                         <div className="paciente-nome">
                           <strong>{paciente.nome}</strong>
-
                           <span>
                             Paciente #{paciente.id}
                           </span>
                         </div>
-
                       </div>
                     </td>
 
-                    {/* CONTATO */}
-
                     <td>
                       <div className="paciente-contato">
-
                         <span>
                           <Phone size={14} />
-
                           {paciente.telefone}
                         </span>
 
                         <span>
                           <Mail size={14} />
-
                           {paciente.email}
                         </span>
-
                       </div>
                     </td>
-
-                    {/* NASCIMENTO */}
 
                     <td>
                       <div className="paciente-data">
                         <CalendarDays size={15} />
-
-                        {formatarNascimento(
-                          paciente.nascimento
-                        )}
+                        {formatarNascimento(paciente.nascimento)}
                       </div>
                     </td>
-
-                    {/* CONSULTA */}
 
                     <td>
                       {paciente.ultimaConsulta || "Nenhuma"}
                     </td>
-
-                    {/* STATUS */}
 
                     <td>
                       <span
@@ -437,16 +391,11 @@ function Pacientes() {
                       </span>
                     </td>
 
-                    {/* AÇÕES */}
-
                     <td>
                       <div className="paciente-acoes">
-
                         <button
                           className="paciente-editar"
-                          onClick={() =>
-                            abrirEdicao(paciente)
-                          }
+                          onClick={() => abrirEdicao(paciente)}
                           title="Editar paciente"
                         >
                           <Pencil size={17} />
@@ -454,67 +403,41 @@ function Pacientes() {
 
                         <button
                           className="paciente-excluir"
-                          onClick={() =>
-                            excluirPaciente(paciente.id)
-                          }
+                          onClick={() => excluirPaciente(paciente.id)}
                           title="Excluir paciente"
                         >
                           <Trash2 size={17} />
                         </button>
-
                       </div>
                     </td>
-
                   </tr>
-
                 ))
               ) : (
-
                 <tr>
-                  <td
-                    colSpan="6"
-                    className="pacientes-vazio"
-                  >
+                  <td colSpan="6" className="pacientes-vazio">
                     <Users size={35} />
-
-                    <strong>
-                      Nenhum paciente encontrado
-                    </strong>
-
+                    <strong>Nenhum paciente encontrado</strong>
                     <span>
                       Tente alterar sua busca ou filtro.
                     </span>
                   </td>
                 </tr>
-
               )}
-
             </tbody>
-
           </table>
-
         </div>
-
       </div>
 
-      {/* MODAL */}
-
       {modalAberto && (
-
         <div
           className="paciente-modal-overlay"
           onMouseDown={fecharModal}
         >
-
           <div
             className="paciente-modal"
-            onMouseDown={(event) =>
-              event.stopPropagation()
-            }
+            onMouseDown={(event) => event.stopPropagation()}
           >
-
             <div className="paciente-modal-header">
-
               <div>
                 <h2>
                   {pacienteEditando
@@ -534,13 +457,10 @@ function Pacientes() {
               >
                 <X size={21} />
               </button>
-
             </div>
 
             <form onSubmit={salvarPaciente}>
-
               <div className="paciente-form-group">
-
                 <label>Nome completo</label>
 
                 <input
@@ -551,13 +471,10 @@ function Pacientes() {
                   placeholder="Digite o nome do paciente"
                   required
                 />
-
               </div>
 
               <div className="paciente-form-grid">
-
                 <div className="paciente-form-group">
-
                   <label>Telefone</label>
 
                   <input
@@ -568,11 +485,9 @@ function Pacientes() {
                     placeholder="(00) 00000-0000"
                     required
                   />
-
                 </div>
 
                 <div className="paciente-form-group">
-
                   <label>Data de nascimento</label>
 
                   <input
@@ -582,13 +497,10 @@ function Pacientes() {
                     onChange={handleChange}
                     required
                   />
-
                 </div>
-
               </div>
 
               <div className="paciente-form-group">
-
                 <label>E-mail</label>
 
                 <input
@@ -598,11 +510,9 @@ function Pacientes() {
                   onChange={handleChange}
                   placeholder="paciente@email.com"
                 />
-
               </div>
 
               <div className="paciente-form-group">
-
                 <label>Status</label>
 
                 <select
@@ -610,19 +520,12 @@ function Pacientes() {
                   value={form.status}
                   onChange={handleChange}
                 >
-                  <option value="Ativo">
-                    Ativo
-                  </option>
-
-                  <option value="Inativo">
-                    Inativo
-                  </option>
+                  <option value="Ativo">Ativo</option>
+                  <option value="Inativo">Inativo</option>
                 </select>
-
               </div>
 
               <div className="paciente-modal-actions">
-
                 <button
                   type="button"
                   className="paciente-cancelar-btn"
@@ -639,17 +542,11 @@ function Pacientes() {
                     ? "Salvar alterações"
                     : "Cadastrar paciente"}
                 </button>
-
               </div>
-
             </form>
-
           </div>
-
         </div>
-
       )}
-
     </div>
   );
 }

@@ -14,7 +14,9 @@ function AppLayout({ children }) {
   useEffect(() => {
     async function buscarUsuario() {
       try {
-        const resposta = await fetch("/api/usuarios/me", {
+        const resposta = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/usuarios/me`,
+        {
           method: "GET",
           credentials: "include",
         });

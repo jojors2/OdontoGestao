@@ -1,5 +1,6 @@
 
 import { useState, useEffect } from "react";
+
 import {
   CalendarDays,
   Users,
@@ -9,7 +10,10 @@ import {
   CheckCircle,
   XCircle,
 } from "lucide-react";
+
 import { Link } from "react-router-dom";
+import { apiFetch } from "../../services/api";
+
 import "./Dashboard.css";
 
 function Dashboard() {
@@ -34,20 +38,23 @@ function Dashboard() {
       try {
         setLoading(true);
 
-        const res = await fetch("/api/dashboard", {
+        const res = await apiFetch("/api/dashboard", {
           method: "GET",
-          credentials: "include",
         });
 
         if (!res.ok) {
-          throw new Error(`Erro ao buscar dashboard: ${res.status}`);
+          throw new Error(
+            `Erro ao buscar dashboard: ${res.status}`
+          );
         }
 
         const dados = await res.json();
         setStats(dados);
-
       } catch (err) {
-        console.error("Erro ao carregar dados do dashboard:", err);
+        console.error(
+          "Erro ao carregar dados do dashboard:",
+          err
+        );
       } finally {
         setLoading(false);
       }
@@ -66,6 +73,7 @@ function Dashboard() {
 
   return (
     <div className="dashboard">
+      {/* TOPO */}
       <div className="dashboard-header">
         <div>
           <h1>Dashboard</h1>
@@ -78,11 +86,13 @@ function Dashboard() {
         </div>
       </div>
 
+      {/* CARDS */}
       <div className="dashboard-cards">
         <div className="dashboard-card">
           <div className="card-icon">
             <CalendarDays size={25} />
           </div>
+
           <div>
             <span>Consultas hoje</span>
             <strong>{stats.consultasHoje}</strong>
@@ -93,6 +103,7 @@ function Dashboard() {
           <div className="card-icon">
             <Users size={25} />
           </div>
+
           <div>
             <span>Pacientes</span>
             <strong>{stats.totalPacientes}</strong>
@@ -103,6 +114,7 @@ function Dashboard() {
           <div className="card-icon">
             <ClipboardList size={25} />
           </div>
+
           <div>
             <span>Orçamentos pendentes</span>
             <strong>{stats.totalOrcamentos}</strong>
@@ -113,6 +125,7 @@ function Dashboard() {
           <div className="card-icon">
             <Bell size={25} />
           </div>
+
           <div>
             <span>Lembretes pendentes</span>
             <strong>{stats.lembretesPendentes}</strong>
@@ -120,7 +133,9 @@ function Dashboard() {
         </div>
       </div>
 
+      {/* CONTEÚDO */}
       <div className="dashboard-content">
+        {/* PRÓXIMAS CONSULTAS */}
         <section className="dashboard-section">
           <div className="section-header">
             <div>
@@ -135,14 +150,22 @@ function Dashboard() {
 
           <div className="consultas-list">
             {consultas.length === 0 ? (
-              <p style={{ padding: "16px", color: "#6b7280" }}>
+              <p
+                style={{
+                  padding: "16px",
+                  color: "#6b7280",
+                }}
+              >
                 {loading
                   ? "Carregando consultas..."
                   : "Nenhuma consulta agendada para hoje."}
               </p>
             ) : (
               consultas.map((consulta) => (
-                <div className="consulta-item" key={consulta.id}>
+                <div
+                  className="consulta-item"
+                  key={consulta.id}
+                >
                   <div className="consulta-horario">
                     <Clock size={18} />
                     <strong>{consulta.horario}</strong>
@@ -170,6 +193,7 @@ function Dashboard() {
           </div>
         </section>
 
+        {/* RESUMO DO DIA */}
         <section className="dashboard-section">
           <div className="section-header">
             <div>
@@ -183,6 +207,7 @@ function Dashboard() {
               <div className="resumo-icon">
                 <CheckCircle size={20} />
               </div>
+
               <div>
                 <strong>{resumo.concluidas}</strong>
                 <span>Concluídas</span>
@@ -193,6 +218,7 @@ function Dashboard() {
               <div className="resumo-icon">
                 <Clock size={20} />
               </div>
+
               <div>
                 <strong>{resumo.agendadas}</strong>
                 <span>Agendadas</span>
@@ -203,6 +229,7 @@ function Dashboard() {
               <div className="resumo-icon">
                 <XCircle size={20} />
               </div>
+
               <div>
                 <strong>{resumo.canceladas}</strong>
                 <span>Canceladas</span>

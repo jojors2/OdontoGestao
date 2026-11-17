@@ -1,3 +1,4 @@
+
 import { useMemo, useState, useEffect } from "react";
 import {
   Plus,
@@ -6,13 +7,12 @@ import {
   Clock3,
   CircleDollarSign,
   BadgeCheck,
-  Eye,
-  Pencil,
   Trash2,
   X,
   Save,
 } from "lucide-react";
 
+import { apiFetch } from "../../services/api";
 import "./Orcamentos.css";
 
 function Orcamentos() {
@@ -34,9 +34,8 @@ function Orcamentos() {
     try {
       setCarregando(true);
 
-      const res = await fetch("/api/orcamentos", {
+      const res = await apiFetch("/api/orcamentos", {
         method: "GET",
-        credentials: "include",
       });
 
       if (!res.ok) {
@@ -70,7 +69,8 @@ function Orcamentos() {
       const nomeProcedimento = (orcamento.procedimento || "").toLowerCase();
 
       const correspondeBusca =
-        nomePaciente.includes(textoBusca) || nomeProcedimento.includes(textoBusca);
+        nomePaciente.includes(textoBusca) ||
+        nomeProcedimento.includes(textoBusca);
 
       const correspondeStatus =
         filtroStatus === "Todos" || orcamento.status === filtroStatus;
@@ -122,9 +122,8 @@ function Orcamentos() {
     event.preventDefault();
 
     try {
-      const res = await fetch("/api/orcamentos", {
+      const res = await apiFetch("/api/orcamentos", {
         method: "POST",
-        credentials: "include",
         headers: {
           "Content-Type": "application/json",
         },
@@ -152,9 +151,8 @@ function Orcamentos() {
     if (!confirmar) return;
 
     try {
-      const res = await fetch(`/api/orcamentos/${id}`, {
+      const res = await apiFetch(`/api/orcamentos/${id}`, {
         method: "DELETE",
-        credentials: "include",
       });
 
       if (!res.ok) {
@@ -171,13 +169,12 @@ function Orcamentos() {
 
   return (
     <div className="orcamentos-page">
-      {/* =========================
-          TÍTULO
-      ========================== */}
       <div className="orcamentos-page-header">
         <div>
           <h1>Orçamentos</h1>
-          <p>Crie e acompanhe os orçamentos dos seus pacientes salvos no banco de dados.</p>
+          <p>
+            Crie e acompanhe os orçamentos dos seus pacientes salvos no banco de dados.
+          </p>
         </div>
 
         <button className="orcamentos-btn-primary" onClick={abrirModal}>
@@ -186,9 +183,6 @@ function Orcamentos() {
         </button>
       </div>
 
-      {/* =========================
-          CARDS
-      ========================== */}
       <section className="orcamentos-cards">
         <article className="orcamentos-card">
           <div className="orcamentos-card-icon azul">
@@ -235,9 +229,6 @@ function Orcamentos() {
         </article>
       </section>
 
-      {/* =========================
-          LISTAGEM
-      ========================== */}
       <section className="orcamentos-lista">
         <div className="orcamentos-lista-header">
           <div>
@@ -282,7 +273,13 @@ function Orcamentos() {
             </thead>
 
             <tbody>
-              {orcamentosFiltrados.length > 0 ? (
+              {carregando ? (
+                <tr>
+                  <td colSpan="6" className="orcamentos-vazio">
+                    Carregando orçamentos do banco...
+                  </td>
+                </tr>
+              ) : orcamentosFiltrados.length > 0 ? (
                 orcamentosFiltrados.map((orcamento) => (
                   <tr key={orcamento.id}>
                     <td data-label="Paciente">
@@ -294,7 +291,9 @@ function Orcamentos() {
                       </div>
                     </td>
 
-                    <td data-label="Procedimento">{orcamento.procedimento}</td>
+                    <td data-label="Procedimento">
+                      {orcamento.procedimento}
+                    </td>
 
                     <td data-label="Data">{orcamento.data}</td>
 
@@ -303,7 +302,9 @@ function Orcamentos() {
                     </td>
 
                     <td data-label="Status">
-                      <span className={`orcamentos-status ${(orcamento.status || "").toLowerCase()}`}>
+                      <span
+                        className={`orcamentos-status ${(orcamento.status || "").toLowerCase()}`}
+                      >
                         {orcamento.status}
                       </span>
                     </td>
@@ -327,9 +328,7 @@ function Orcamentos() {
                     <FileText size={36} />
                     <strong>Nenhum orçamento encontrado</strong>
                     <span>
-                      {carregando
-                        ? "Carregando orçamentos do banco..."
-                        : "Tente alterar os filtros ou cadastrar um novo orçamento."}
+                      Tente alterar os filtros ou cadastrar um novo orçamento.
                     </span>
                   </td>
                 </tr>
@@ -339,9 +338,6 @@ function Orcamentos() {
         </div>
       </section>
 
-      {/* =========================
-          MODAL
-      ========================== */}
       {modalAberto && (
         <div className="orcamentos-modal-overlay" onMouseDown={fecharModal}>
           <div

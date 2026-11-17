@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
+import { apiFetch } from "../../services/api";
 import "./Login.css";
 
 function Login() {
@@ -13,14 +14,23 @@ function Login() {
   const [carregando, setCarregando] = useState(false);
   const [mostrarSenha, setMostrarSenha] = useState(false);
 
-  // Se já estiver logado, redireciona para o dashboard
+  // Verifica se já existe uma sessão autenticada
   useEffect(() => {
-    const usuarioLogado =
-      localStorage.getItem("usuarioLogado") === "true";
+    async function verificarSessao() {
+      try {
+        const resposta = await apiFetch("/api/usuarios/me", {
+          method: "GET",
+        });
 
-    if (usuarioLogado) {
-      navigate("/dashboard", { replace: true });
+        if (resposta.ok) {
+          navigate("/dashboard", { replace: true });
+        }
+      } catch (err) {
+        console.error("Erro ao verificar sessão:", err);
+      }
     }
+
+    verificarSessao();
   }, [navigate]);
 
   async function fazerLogin(event) {
@@ -35,9 +45,8 @@ function Login() {
     setCarregando(true);
 
     try {
-      const resposta = await fetch("/api/login", {
+      const resposta = await apiFetch("/api/login", {
         method: "POST",
-        credentials: "include",
         headers: {
           "Content-Type": "application/json",
         },
@@ -51,12 +60,7 @@ function Login() {
         return;
       }
 
-      // Salva os dados do usuário autenticado
-      localStorage.setItem("usuarioLogado", "true");
-      localStorage.setItem("usuario", JSON.stringify(dados));
-
       navigate("/dashboard", { replace: true });
-
     } catch (err) {
       console.error("Erro de conexão:", err);
       setErro(

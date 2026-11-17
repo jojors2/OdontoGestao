@@ -1,4 +1,6 @@
+
 import { useMemo, useState, useEffect } from "react";
+
 import {
   CalendarDays,
   Clock3,
@@ -6,13 +8,14 @@ import {
   CheckCircle2,
   CircleAlert,
   XCircle,
-  Eye,
-  Pencil,
-  Trash2,
   Stethoscope,
   Plus,
   X,
+  Trash2,
 } from "lucide-react";
+
+import { apiFetch } from "../../services/api";
+
 import "./Consultas.css";
 
 function Consultas() {
@@ -33,44 +36,42 @@ function Consultas() {
   });
 
   async function carregarConsultas() {
-  try {
-    setCarregando(true);
+    try {
+      setCarregando(true);
 
-    const res = await fetch("/api/consultas", {
-      method: "GET",
-      credentials: "include",
-    });
+      const res = await apiFetch("/api/consultas", {
+        method: "GET",
+      });
 
-    if (!res.ok) {
-      throw new Error(`Erro ao buscar consultas: ${res.status}`);
+      if (!res.ok) {
+        throw new Error(`Erro ao buscar consultas: ${res.status}`);
+      }
+
+      const dados = await res.json();
+      setConsultas(dados);
+    } catch (err) {
+      console.error("Erro ao carregar consultas:", err);
+    } finally {
+      setCarregando(false);
     }
-
-    const dados = await res.json();
-    setConsultas(dados);
-  } catch (err) {
-    console.error("Erro ao carregar consultas:", err);
-  } finally {
-    setCarregando(false);
   }
-}
 
   async function carregarPacientes() {
-  try {
-    const res = await fetch("/api/pacientes", {
-      method: "GET",
-      credentials: "include",
-    });
+    try {
+      const res = await apiFetch("/api/pacientes", {
+        method: "GET",
+      });
 
-    if (!res.ok) {
-      throw new Error(`Erro ao buscar pacientes: ${res.status}`);
+      if (!res.ok) {
+        throw new Error(`Erro ao buscar pacientes: ${res.status}`);
+      }
+
+      const dados = await res.json();
+      setPacientes(dados);
+    } catch (err) {
+      console.error("Erro ao carregar pacientes:", err);
     }
-
-    const dados = await res.json();
-    setPacientes(dados);
-  } catch (err) {
-    console.error("Erro ao carregar pacientes:", err);
   }
-}
 
   useEffect(() => {
     carregarConsultas();
@@ -80,103 +81,120 @@ function Consultas() {
   const consultasFiltradas = useMemo(() => {
     return consultas.filter((consulta) => {
       const texto = busca.toLowerCase();
+
       const nomePaciente = (consulta.paciente || "").toLowerCase();
       const nomeProcedimento = (consulta.procedimento || "").toLowerCase();
 
       const correspondeBusca =
-        nomePaciente.includes(texto) || nomeProcedimento.includes(texto);
+        nomePaciente.includes(texto) ||
+        nomeProcedimento.includes(texto);
 
       const correspondeStatus =
-        filtroStatus === "Todos" || consulta.status === filtroStatus;
+        filtroStatus === "Todos" ||
+        consulta.status === filtroStatus;
 
       return correspondeBusca && correspondeStatus;
     });
   }, [busca, filtroStatus, consultas]);
 
-  const confirmadas = consultas.filter((c) => c.status === "Confirmada").length;
-  const aguardando = consultas.filter((c) => c.status === "Agendada" || c.status === "Aguardando").length;
-  const concluidas = consultas.filter((c) => c.status === "Concluída").length;
-  const canceladas = consultas.filter((c) => c.status === "Cancelada").length;
+  const confirmadas = consultas.filter(
+    (c) => c.status === "Confirmada"
+  ).length;
+
+  const aguardando = consultas.filter(
+    (c) =>
+      c.status === "Agendada" ||
+      c.status === "Aguardando"
+  ).length;
+
+  const concluidas = consultas.filter(
+    (c) => c.status === "Concluída"
+  ).length;
+
+  const canceladas = consultas.filter(
+    (c) => c.status === "Cancelada"
+  ).length;
 
   function getStatusClass(status) {
     switch (status) {
       case "Confirmada":
         return "consulta-status-confirmada";
+
       case "Aguardando":
       case "Agendada":
         return "consulta-status-aguardando";
+
       case "Concluída":
         return "consulta-status-concluida";
+
       case "Cancelada":
         return "consulta-status-cancelada";
+
       default:
         return "";
     }
   }
 
-  
-async function excluirConsulta(id) {
-  const confirmar = window.confirm(
-    "Deseja realmente excluir esta consulta?"
-  );
-
-  if (!confirmar) return;
-
-  try {
-    const res = await fetch(`/api/consultas/${id}`, {
-      method: "DELETE",
-      credentials: "include",
-    });
-
-    if (!res.ok) {
-      throw new Error(`Erro ao excluir consulta: ${res.status}`);
-    }
-
-    setConsultas((atuais) =>
-      atuais.filter((c) => c.id !== id)
+  async function excluirConsulta(id) {
+    const confirmar = window.confirm(
+      "Deseja realmente excluir esta consulta?"
     );
-  } catch (err) {
-    console.error("Erro ao excluir consulta:", err);
-  }
-}
 
+    if (!confirmar) return;
 
-  
-async function salvarConsulta(e) {
-  e.preventDefault();
+    try {
+      const res = await apiFetch(`/api/consultas/${id}`, {
+        method: "DELETE",
+      });
 
-  try {
-    const res = await fetch("/api/consultas", {
-      method: "POST",
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(form),
-    });
+      if (!res.ok) {
+        throw new Error(`Erro ao excluir consulta: ${res.status}`);
+      }
 
-    if (!res.ok) {
-      throw new Error(`Erro ao salvar consulta: ${res.status}`);
+      setConsultas((atuais) =>
+        atuais.filter((c) => c.id !== id)
+      );
+    } catch (err) {
+      console.error("Erro ao excluir consulta:", err);
+      alert("Não foi possível excluir a consulta.");
     }
-
-    const nova = await res.json();
-
-    setConsultas((atuais) => [nova, ...atuais]);
-    setModalAberto(false);
-
-    setForm({
-      paciente: "",
-      procedimento: "",
-      data: new Date().toISOString().slice(0, 10),
-      horario: "09:00",
-      status: "Agendada",
-      observacoes: "",
-    });
-  } catch (err) {
-    console.error("Erro ao salvar consulta:", err);
   }
-}
 
+  async function salvarConsulta(e) {
+    e.preventDefault();
+
+    try {
+      const res = await apiFetch("/api/consultas", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(form),
+      });
+
+      if (!res.ok) {
+        throw new Error(`Erro ao salvar consulta: ${res.status}`);
+      }
+
+      const nova = await res.json();
+
+      setConsultas((atuais) => [nova, ...atuais]);
+
+      setModalAberto(false);
+
+      setForm({
+        paciente: "",
+        procedimento: "",
+        data: new Date().toISOString().slice(0, 10),
+        horario: "09:00",
+        status: "Agendada",
+        observacoes: "",
+      });
+    } catch (err) {
+      console.error("Erro ao salvar consulta:", err);
+      alert("Não foi possível salvar a consulta.");
+    }
+  }
 
   return (
     <div className="consultas-page">
@@ -184,13 +202,22 @@ async function salvarConsulta(e) {
       <header className="consultas-page-header">
         <div>
           <h1>Consultas</h1>
-          <p>Gerencie e acompanhe as consultas dos seus pacientes salvas no banco de dados.</p>
+
+          <p>
+            Gerencie e acompanhe as consultas dos seus pacientes
+            salvas no banco de dados.
+          </p>
         </div>
 
         <button
           onClick={() => setModalAberto(true)}
           className="btn-nova-consulta"
-          style={{ cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "8px" }}
+          style={{
+            cursor: "pointer",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "8px",
+          }}
         >
           <Plus size={18} />
           Nova consulta
@@ -203,6 +230,7 @@ async function salvarConsulta(e) {
           <div className="consultas-card-icon consultas-icon-blue">
             <CalendarDays size={23} />
           </div>
+
           <div className="consultas-card-info">
             <span>Confirmadas</span>
             <strong>{confirmadas}</strong>
@@ -214,6 +242,7 @@ async function salvarConsulta(e) {
           <div className="consultas-card-icon consultas-icon-orange">
             <CircleAlert size={23} />
           </div>
+
           <div className="consultas-card-info">
             <span>Agendadas</span>
             <strong>{aguardando}</strong>
@@ -225,6 +254,7 @@ async function salvarConsulta(e) {
           <div className="consultas-card-icon consultas-icon-green">
             <CheckCircle2 size={23} />
           </div>
+
           <div className="consultas-card-info">
             <span>Concluídas</span>
             <strong>{concluidas}</strong>
@@ -236,6 +266,7 @@ async function salvarConsulta(e) {
           <div className="consultas-card-icon consultas-icon-red">
             <XCircle size={23} />
           </div>
+
           <div className="consultas-card-info">
             <span>Canceladas</span>
             <strong>{canceladas}</strong>
@@ -251,6 +282,7 @@ async function salvarConsulta(e) {
             <div className="consultas-lista-icon">
               <Stethoscope size={20} />
             </div>
+
             <div>
               <h2>Consultas cadastradas</h2>
               <p>Visualize e gerencie os atendimentos.</p>
@@ -260,6 +292,7 @@ async function salvarConsulta(e) {
           <div className="consultas-filtros">
             <div className="consultas-busca">
               <Search size={18} />
+
               <input
                 type="text"
                 placeholder="Buscar paciente ou procedimento..."
@@ -302,8 +335,11 @@ async function salvarConsulta(e) {
                     <td>
                       <div className="consulta-paciente">
                         <div className="consulta-avatar">
-                          {(consulta.paciente || "P").charAt(0).toUpperCase()}
+                          {(consulta.paciente || "P")
+                            .charAt(0)
+                            .toUpperCase()}
                         </div>
+
                         <div>
                           <strong>{consulta.paciente}</strong>
                           <span>Paciente</span>
@@ -328,7 +364,11 @@ async function salvarConsulta(e) {
                     </td>
 
                     <td>
-                      <span className={`consulta-status ${getStatusClass(consulta.status)}`}>
+                      <span
+                        className={`consulta-status ${getStatusClass(
+                          consulta.status
+                        )}`}
+                      >
                         {consulta.status}
                       </span>
                     </td>
@@ -348,9 +388,14 @@ async function salvarConsulta(e) {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="6" className="consultas-sem-resultado">
+                  <td
+                    colSpan="6"
+                    className="consultas-sem-resultado"
+                  >
                     <Search size={30} />
+
                     <strong>Nenhuma consulta encontrada</strong>
+
                     <span>
                       {carregando
                         ? "Carregando dados do banco..."
@@ -388,53 +433,86 @@ async function salvarConsulta(e) {
               boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.5)",
             }}
           >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-              <h2 style={{ fontSize: "1.25rem", fontWeight: "bold" }}>Nova Consulta</h2>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: "16px",
+              }}
+            >
+              <h2
+                style={{
+                  fontSize: "1.25rem",
+                  fontWeight: "bold",
+                }}
+              >
+                Nova Consulta
+              </h2>
+
               <button
+                type="button"
                 onClick={() => setModalAberto(false)}
-                style={{ background: "transparent", border: "none", color: "#94a3b8", cursor: "pointer" }}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  color: "#94a3b8",
+                  cursor: "pointer",
+                }}
               >
                 <X size={20} />
               </button>
             </div>
 
-            <form onSubmit={salvarConsulta} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+            <form
+              onSubmit={salvarConsulta}
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "12px",
+              }}
+            >
               <div>
-                <label style={{ fontSize: "0.875rem", color: "#cbd5e1", display: "block", marginBottom: "4px" }}>
+                <label
+                  style={{
+                    fontSize: "0.875rem",
+                    color: "#cbd5e1",
+                    display: "block",
+                    marginBottom: "4px",
+                  }}
+                >
                   Paciente
                 </label>
+
                 {pacientes.length > 0 ? (
                   <input
                     list="lista-pacientes"
                     required
                     placeholder="Selecione ou digite o nome do paciente"
                     value={form.paciente}
-                    onChange={(e) => setForm({ ...form, paciente: e.target.value })}
-                    style={{
-                      width: "100%",
-                      padding: "8px 12px",
-                      borderRadius: "6px",
-                      background: "#0f172a",
-                      color: "#fff",
-                      border: "1px solid #334155",
-                    }}
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        paciente: e.target.value,
+                      })
+                    }
+                    style={estiloCampo}
                   />
                 ) : (
                   <input
                     required
                     placeholder="Nome do paciente"
                     value={form.paciente}
-                    onChange={(e) => setForm({ ...form, paciente: e.target.value })}
-                    style={{
-                      width: "100%",
-                      padding: "8px 12px",
-                      borderRadius: "6px",
-                      background: "#0f172a",
-                      color: "#fff",
-                      border: "1px solid #334155",
-                    }}
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        paciente: e.target.value,
+                      })
+                    }
+                    style={estiloCampo}
                   />
                 )}
+
                 <datalist id="lista-pacientes">
                   {pacientes.map((p) => (
                     <option key={p.id} value={p.nome} />
@@ -443,82 +521,78 @@ async function salvarConsulta(e) {
               </div>
 
               <div>
-                <label style={{ fontSize: "0.875rem", color: "#cbd5e1", display: "block", marginBottom: "4px" }}>
+                <label style={estiloLabel}>
                   Procedimento
                 </label>
+
                 <input
                   required
                   placeholder="Ex: Limpeza, Restauração, Avaliação"
                   value={form.procedimento}
-                  onChange={(e) => setForm({ ...form, procedimento: e.target.value })}
-                  style={{
-                    width: "100%",
-                    padding: "8px 12px",
-                    borderRadius: "6px",
-                    background: "#0f172a",
-                    color: "#fff",
-                    border: "1px solid #334155",
-                  }}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      procedimento: e.target.value,
+                    })
+                  }
+                  style={estiloCampo}
                 />
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: "12px",
+                }}
+              >
                 <div>
-                  <label style={{ fontSize: "0.875rem", color: "#cbd5e1", display: "block", marginBottom: "4px" }}>
-                    Data
-                  </label>
+                  <label style={estiloLabel}>Data</label>
+
                   <input
                     type="date"
                     required
                     value={form.data}
-                    onChange={(e) => setForm({ ...form, data: e.target.value })}
-                    style={{
-                      width: "100%",
-                      padding: "8px 12px",
-                      borderRadius: "6px",
-                      background: "#0f172a",
-                      color: "#fff",
-                      border: "1px solid #334155",
-                    }}
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        data: e.target.value,
+                      })
+                    }
+                    style={estiloCampo}
                   />
                 </div>
 
                 <div>
-                  <label style={{ fontSize: "0.875rem", color: "#cbd5e1", display: "block", marginBottom: "4px" }}>
-                    Horário
-                  </label>
+                  <label style={estiloLabel}>Horário</label>
+
                   <input
                     type="time"
                     required
                     value={form.horario}
-                    onChange={(e) => setForm({ ...form, horario: e.target.value })}
-                    style={{
-                      width: "100%",
-                      padding: "8px 12px",
-                      borderRadius: "6px",
-                      background: "#0f172a",
-                      color: "#fff",
-                      border: "1px solid #334155",
-                    }}
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        horario: e.target.value,
+                      })
+                    }
+                    style={estiloCampo}
                   />
                 </div>
               </div>
 
               <div>
-                <label style={{ fontSize: "0.875rem", color: "#cbd5e1", display: "block", marginBottom: "4px" }}>
-                  Status
-                </label>
+                <label style={estiloLabel}>Status</label>
+
                 <select
                   value={form.status}
-                  onChange={(e) => setForm({ ...form, status: e.target.value })}
-                  style={{
-                    width: "100%",
-                    padding: "8px 12px",
-                    borderRadius: "6px",
-                    background: "#0f172a",
-                    color: "#fff",
-                    border: "1px solid #334155",
-                  }}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      status: e.target.value,
+                    })
+                  }
+                  style={estiloCampo}
                 >
                   <option value="Agendada">Agendada</option>
                   <option value="Confirmada">Confirmada</option>
@@ -527,7 +601,14 @@ async function salvarConsulta(e) {
                 </select>
               </div>
 
-              <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "12px" }}>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "flex-end",
+                  gap: "10px",
+                  marginTop: "12px",
+                }}
+              >
                 <button
                   type="button"
                   onClick={() => setModalAberto(false)}
@@ -542,6 +623,7 @@ async function salvarConsulta(e) {
                 >
                   Cancelar
                 </button>
+
                 <button
                   type="submit"
                   style={{
@@ -564,5 +646,21 @@ async function salvarConsulta(e) {
     </div>
   );
 }
+
+const estiloLabel = {
+  fontSize: "0.875rem",
+  color: "#cbd5e1",
+  display: "block",
+  marginBottom: "4px",
+};
+
+const estiloCampo = {
+  width: "100%",
+  padding: "8px 12px",
+  borderRadius: "6px",
+  background: "#0f172a",
+  color: "#fff",
+  border: "1px solid #334155",
+};
 
 export default Consultas;

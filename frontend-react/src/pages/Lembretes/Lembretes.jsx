@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import {
   Bell,
@@ -14,6 +15,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 
+import { apiFetch } from "../../services/api";
 import "./Lembretes.css";
 
 function Lembretes() {
@@ -37,9 +39,8 @@ function Lembretes() {
     try {
       setCarregando(true);
 
-      const res = await fetch("/api/lembretes", {
+      const res = await apiFetch("/api/lembretes", {
         method: "GET",
-        credentials: "include",
       });
 
       if (!res.ok) {
@@ -61,11 +62,14 @@ function Lembretes() {
 
   function formatarData(data) {
     if (!data) return "";
+
     const partes = data.split("-");
+
     if (partes.length === 3) {
       const [ano, mes, dia] = partes;
       return `${dia}/${mes}/${ano}`;
     }
+
     return data;
   }
 
@@ -122,11 +126,10 @@ function Lembretes() {
 
     try {
       if (lembreteEditando) {
-        const res = await fetch(
+        const res = await apiFetch(
           `/api/lembretes/${lembreteEditando.id}`,
           {
             method: "PUT",
-            credentials: "include",
             headers: {
               "Content-Type": "application/json",
             },
@@ -144,9 +147,8 @@ function Lembretes() {
           lista.map((l) => (l.id === atualizado.id ? atualizado : l))
         );
       } else {
-        const res = await fetch("/api/lembretes", {
+        const res = await apiFetch("/api/lembretes", {
           method: "POST",
-          credentials: "include",
           headers: {
             "Content-Type": "application/json",
           },
@@ -168,11 +170,10 @@ function Lembretes() {
     }
   }
 
- async function alternarConcluido(id) {
+  async function alternarConcluido(id) {
     try {
-      const res = await fetch(`/api/lembretes/${id}/toggle`, {
+      const res = await apiFetch(`/api/lembretes/${id}/toggle`, {
         method: "PATCH",
-        credentials: "include",
       });
 
       if (!res.ok) {
@@ -199,9 +200,8 @@ function Lembretes() {
     if (!confirmar) return;
 
     try {
-      const res = await fetch(`/api/lembretes/${id}`, {
+      const res = await apiFetch(`/api/lembretes/${id}`, {
         method: "DELETE",
-        credentials: "include",
       });
 
       if (!res.ok) {
@@ -233,34 +233,43 @@ function Lembretes() {
     return correspondeBusca && correspondeFiltro;
   });
 
-  const pendentes = lembretes.filter((lembrete) => !lembrete.concluido).length;
-  const concluidos = lembretes.filter((lembrete) => lembrete.concluido).length;
+  const pendentes = lembretes.filter(
+    (lembrete) => !lembrete.concluido
+  ).length;
+
+  const concluidos = lembretes.filter(
+    (lembrete) => lembrete.concluido
+  ).length;
+
   const prioridadeAlta = lembretes.filter(
-    (lembrete) => lembrete.prioridade === "Alta" && !lembrete.concluido
+    (lembrete) =>
+      lembrete.prioridade === "Alta" && !lembrete.concluido
   ).length;
 
   return (
     <div className="lembretes-page">
-      {/* CABEÇALHO */}
       <div className="lembretes-page-header">
         <div className="lembretes-page-title">
           <h1>Lembretes</h1>
-          <p>Organize tarefas e acompanhe lembretes importantes salvos no banco de dados.</p>
+          <p>
+            Organize tarefas e acompanhe lembretes importantes salvos no banco de dados.
+          </p>
         </div>
 
-        <button className="lembretes-primary-button" onClick={abrirNovoLembrete}>
+        <button
+          className="lembretes-primary-button"
+          onClick={abrirNovoLembrete}
+        >
           <Plus size={19} />
           <span>Novo lembrete</span>
         </button>
       </div>
 
-      {/* CARDS */}
       <div className="lembretes-stats">
         <div className="lembretes-stat-card">
           <div className="lembretes-stat-icon lembretes-icon-blue">
             <Bell size={22} />
           </div>
-
           <div className="lembretes-stat-info">
             <span>Total de lembretes</span>
             <strong>{lembretes.length}</strong>
@@ -271,7 +280,6 @@ function Lembretes() {
           <div className="lembretes-stat-icon lembretes-icon-orange">
             <Clock3 size={22} />
           </div>
-
           <div className="lembretes-stat-info">
             <span>Pendentes</span>
             <strong>{pendentes}</strong>
@@ -282,7 +290,6 @@ function Lembretes() {
           <div className="lembretes-stat-icon lembretes-icon-green">
             <CheckCircle2 size={22} />
           </div>
-
           <div className="lembretes-stat-info">
             <span>Concluídos</span>
             <strong>{concluidos}</strong>
@@ -293,7 +300,6 @@ function Lembretes() {
           <div className="lembretes-stat-icon lembretes-icon-red">
             <AlertCircle size={22} />
           </div>
-
           <div className="lembretes-stat-info">
             <span>Prioridade alta</span>
             <strong>{prioridadeAlta}</strong>
@@ -301,7 +307,6 @@ function Lembretes() {
         </div>
       </div>
 
-      {/* CONTEÚDO */}
       <section className="lembretes-panel">
         <div className="lembretes-panel-header">
           <div>
@@ -315,7 +320,6 @@ function Lembretes() {
           </span>
         </div>
 
-        {/* PESQUISA E FILTRO */}
         <div className="lembretes-toolbar">
           <div className="lembretes-search">
             <Search size={19} />
@@ -331,7 +335,9 @@ function Lembretes() {
             {["Todos", "Pendentes", "Concluídos"].map((opcao) => (
               <button
                 key={opcao}
-                className={filtro === opcao ? "lembretes-filter-active" : ""}
+                className={
+                  filtro === opcao ? "lembretes-filter-active" : ""
+                }
                 onClick={() => setFiltro(opcao)}
               >
                 {opcao}
@@ -340,9 +346,12 @@ function Lembretes() {
           </div>
         </div>
 
-        {/* LISTA */}
         <div className="lembretes-list">
-          {lembretesFiltrados.length > 0 ? (
+          {carregando ? (
+            <div className="lembretes-empty">
+              <p>Carregando lembretes do banco...</p>
+            </div>
+          ) : lembretesFiltrados.length > 0 ? (
             lembretesFiltrados.map((lembrete) => (
               <article
                 key={lembrete.id}
@@ -369,6 +378,7 @@ function Lembretes() {
                     <div className="lembrete-title-area">
                       <div className="lembrete-title-line">
                         <h3>{lembrete.titulo}</h3>
+
                         <span
                           className={`lembrete-priority lembrete-priority-${(
                             lembrete.prioridade || "média"
@@ -377,6 +387,7 @@ function Lembretes() {
                           {lembrete.prioridade}
                         </span>
                       </div>
+
                       <p>{lembrete.descricao}</p>
                     </div>
 
@@ -425,27 +436,31 @@ function Lembretes() {
               <div className="lembretes-empty-icon">
                 <Bell size={31} />
               </div>
+
               <h3>Nenhum lembrete encontrado</h3>
+
               <p>
-                {carregando
-                  ? "Carregando lembretes do banco..."
-                  : "Não encontramos lembretes correspondentes aos filtros selecionados."}
+                Não encontramos lembretes correspondentes aos filtros selecionados.
               </p>
             </div>
           )}
         </div>
       </section>
 
-      {/* MODAL */}
       {modalAberto && (
-        <div className="lembretes-modal-overlay" onMouseDown={fecharModal}>
+        <div
+          className="lembretes-modal-overlay"
+          onMouseDown={fecharModal}
+        >
           <div
             className="lembretes-modal"
             onMouseDown={(event) => event.stopPropagation()}
           >
             <div className="lembretes-modal-header">
               <div>
-                <h2>{lembreteEditando ? "Editar lembrete" : "Novo lembrete"}</h2>
+                <h2>
+                  {lembreteEditando ? "Editar lembrete" : "Novo lembrete"}
+                </h2>
                 <p>
                   {lembreteEditando
                     ? "Atualize as informações do lembrete."
@@ -453,7 +468,10 @@ function Lembretes() {
                 </p>
               </div>
 
-              <button className="lembretes-modal-close" onClick={fecharModal}>
+              <button
+                className="lembretes-modal-close"
+                onClick={fecharModal}
+              >
                 <X size={21} />
               </button>
             </div>
@@ -551,8 +569,13 @@ function Lembretes() {
                   Cancelar
                 </button>
 
-                <button type="submit" className="lembretes-save-button">
-                  {lembreteEditando ? "Salvar alterações" : "Criar lembrete"}
+                <button
+                  type="submit"
+                  className="lembretes-save-button"
+                >
+                  {lembreteEditando
+                    ? "Salvar alterações"
+                    : "Criar lembrete"}
                 </button>
               </div>
             </form>
