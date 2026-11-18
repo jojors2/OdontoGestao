@@ -15,67 +15,92 @@ import {
 } from "lucide-react";
 
 import { apiFetch } from "../../services/api";
-
 import "./Consultas.css";
+
+const formularioInicial = () => ({
+  pacienteId: "",
+  procedimento: "",
+  data: new Date().toISOString().slice(0, 10),
+  horario: "09:00",
+  status: "Agendada",
+  observacoes: "",
+  dentistaId: "",
+});
 
 function Consultas() {
   const [busca, setBusca] = useState("");
   const [filtroStatus, setFiltroStatus] = useState("Todos");
   const [consultas, setConsultas] = useState([]);
   const [carregando, setCarregando] = useState(true);
+  const [salvando, setSalvando] = useState(false);
   const [modalAberto, setModalAberto] = useState(false);
+
   const [pacientes, setPacientes] = useState([]);
+  const [dentistas, setDentistas] = useState([]);
+  const [usuario, setUsuario] = useState(null);
 
-  const [form, setForm] = useState({
-    paciente: "",
-    procedimento: "",
-    data: new Date().toISOString().slice(0, 10),
-    horario: "09:00",
-    status: "Agendada",
-    observacoes: "",
-  });
+  const [form, setForm] = useState(formularioInicial);
 
-  async function carregarConsultas() {
+  const podeSelecionarDentista =
+    ["ADMIN", "SECRETARIA"].includes(usuario?.perfil);
+
+  async function carregarDados() {
     try {
       setCarregando(true);
 
-      const res = await apiFetch("/api/consultas", {
-        method: "GET",
-      });
+      const [resConsultas, resPacientes, resUsuario] =
+        await Promise.all([
+          apiFetch("/api/consultas"),
+          apiFetch("/api/pacientes"),
+          apiFetch("/api/usuarios/me"),
+        ]);
 
-      if (!res.ok) {
-        throw new Error(`Erro ao buscar consultas: ${res.status}`);
+      if (!resConsultas.ok) {
+        throw new Error("Erro ao carregar consultas.");
       }
 
-      const dados = await res.json();
-      setConsultas(dados);
+      if (!resPacientes.ok) {
+        throw new Error("Erro ao carregar pacientes.");
+      }
+
+      if (!resUsuario.ok) {
+        throw new Error("Erro ao identificar usuário.");
+      }
+
+      const [dadosConsultas, dadosPacientes, dadosUsuario] =
+        await Promise.all([
+          resConsultas.json(),
+          resPacientes.json(),
+          resUsuario.json(),
+        ]);
+
+      setConsultas(dadosConsultas);
+      setPacientes(dadosPacientes);
+      setUsuario(dadosUsuario);
+
+      if (
+        ["ADMIN", "SECRETARIA", "DENTISTA"].includes(
+          dadosUsuario.perfil
+        )
+      ) {
+        const resDentistas = await apiFetch("/api/dentistas");
+
+        if (!resDentistas.ok) {
+          throw new Error("Erro ao carregar dentistas.");
+        }
+
+        setDentistas(await resDentistas.json());
+      }
     } catch (err) {
-      console.error("Erro ao carregar consultas:", err);
+      console.error("Erro ao carregar dados:", err);
+      alert(err.message || "Não foi possível carregar os dados.");
     } finally {
       setCarregando(false);
     }
   }
 
-  async function carregarPacientes() {
-    try {
-      const res = await apiFetch("/api/pacientes", {
-        method: "GET",
-      });
-
-      if (!res.ok) {
-        throw new Error(`Erro ao buscar pacientes: ${res.status}`);
-      }
-
-      const dados = await res.json();
-      setPacientes(dados);
-    } catch (err) {
-      console.error("Erro ao carregar pacientes:", err);
-    }
-  }
-
   useEffect(() => {
-    carregarConsultas();
-    carregarPacientes();
+    carregarDados();
   }, []);
 
   const consultasFiltradas = useMemo(() => {
@@ -83,11 +108,18 @@ function Consultas() {
       const texto = busca.toLowerCase();
 
       const nomePaciente = (consulta.paciente || "").toLowerCase();
-      const nomeProcedimento = (consulta.procedimento || "").toLowerCase();
+      const nomeProcedimento = (
+        consulta.procedimento || ""
+      ).toLowerCase();
+
+      const nomeDentista = (
+        consulta.dentista || ""
+      ).toLowerCase();
 
       const correspondeBusca =
         nomePaciente.includes(texto) ||
-        nomeProcedimento.includes(texto);
+        nomeProcedimento.includes(texto) ||
+        nomeDentista.includes(texto);
 
       const correspondeStatus =
         filtroStatus === "Todos" ||
@@ -119,20 +151,21 @@ function Consultas() {
     switch (status) {
       case "Confirmada":
         return "consulta-status-confirmada";
-
       case "Aguardando":
       case "Agendada":
         return "consulta-status-aguardando";
-
       case "Concluída":
         return "consulta-status-concluida";
-
       case "Cancelada":
         return "consulta-status-cancelada";
-
       default:
         return "";
     }
+  }
+
+  function abrirModal() {
+    setForm(formularioInicial());
+    setModalAberto(true);
   }
 
   async function excluirConsulta(id) {
@@ -148,7 +181,8 @@ function Consultas() {
       });
 
       if (!res.ok) {
-        throw new Error(`Erro ao excluir consulta: ${res.status}`);
+        const erro = await res.json().catch(() => ({}));
+        throw new Error(erro.erro || "Erro ao excluir consulta.");
       }
 
       setConsultas((atuais) =>
@@ -156,81 +190,98 @@ function Consultas() {
       );
     } catch (err) {
       console.error("Erro ao excluir consulta:", err);
-      alert("Não foi possível excluir a consulta.");
+      alert(err.message || "Não foi possível excluir a consulta.");
     }
   }
 
   async function salvarConsulta(e) {
     e.preventDefault();
 
+    if (!form.pacienteId) {
+      alert("Selecione um paciente.");
+      return;
+    }
+
+    if (
+      podeSelecionarDentista &&
+      !form.dentistaId
+    ) {
+      alert("Selecione o dentista responsável.");
+      return;
+    }
+
     try {
+      setSalvando(true);
+
+      const dadosEnvio = {
+        ...form,
+        pacienteId: Number(form.pacienteId),
+        dentistaId: podeSelecionarDentista
+          ? form.dentistaId
+          : undefined,
+      };
+
       const res = await apiFetch("/api/consultas", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(form),
+        body: JSON.stringify(dadosEnvio),
       });
 
       if (!res.ok) {
-        throw new Error(`Erro ao salvar consulta: ${res.status}`);
+        const erro = await res.json().catch(() => ({}));
+        throw new Error(erro.erro || "Erro ao salvar consulta.");
       }
 
       const nova = await res.json();
 
       setConsultas((atuais) => [nova, ...atuais]);
-
       setModalAberto(false);
-
-      setForm({
-        paciente: "",
-        procedimento: "",
-        data: new Date().toISOString().slice(0, 10),
-        horario: "09:00",
-        status: "Agendada",
-        observacoes: "",
-      });
+      setForm(formularioInicial());
     } catch (err) {
       console.error("Erro ao salvar consulta:", err);
-      alert("Não foi possível salvar a consulta.");
+      alert(err.message || "Não foi possível salvar a consulta.");
+    } finally {
+      setSalvando(false);
     }
   }
 
   return (
     <div className="consultas-page">
-      {/* TOPO */}
       <header className="consultas-page-header">
         <div>
           <h1>Consultas</h1>
-
           <p>
             Gerencie e acompanhe as consultas dos seus pacientes
             salvas no banco de dados.
           </p>
         </div>
 
-        <button
-          onClick={() => setModalAberto(true)}
-          className="btn-nova-consulta"
-          style={{
-            cursor: "pointer",
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "8px",
-          }}
-        >
-          <Plus size={18} />
-          Nova consulta
-        </button>
+        {["ADMIN", "SECRETARIA", "DENTISTA"].includes(
+          usuario?.perfil
+        ) && (
+          <button
+            onClick={abrirModal}
+            className="btn-nova-consulta"
+            style={{
+              cursor: "pointer",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "8px",
+            }}
+          >
+            <Plus size={18} />
+            Nova consulta
+          </button>
+        )}
       </header>
 
-      {/* CARDS */}
       <section className="consultas-cards">
         <article className="consultas-card">
           <div className="consultas-card-icon consultas-icon-blue">
             <CalendarDays size={23} />
           </div>
-
           <div className="consultas-card-info">
             <span>Confirmadas</span>
             <strong>{confirmadas}</strong>
@@ -242,7 +293,6 @@ function Consultas() {
           <div className="consultas-card-icon consultas-icon-orange">
             <CircleAlert size={23} />
           </div>
-
           <div className="consultas-card-info">
             <span>Agendadas</span>
             <strong>{aguardando}</strong>
@@ -254,7 +304,6 @@ function Consultas() {
           <div className="consultas-card-icon consultas-icon-green">
             <CheckCircle2 size={23} />
           </div>
-
           <div className="consultas-card-info">
             <span>Concluídas</span>
             <strong>{concluidas}</strong>
@@ -266,7 +315,6 @@ function Consultas() {
           <div className="consultas-card-icon consultas-icon-red">
             <XCircle size={23} />
           </div>
-
           <div className="consultas-card-info">
             <span>Canceladas</span>
             <strong>{canceladas}</strong>
@@ -275,7 +323,6 @@ function Consultas() {
         </article>
       </section>
 
-      {/* LISTA */}
       <section className="consultas-lista">
         <div className="consultas-lista-topo">
           <div className="consultas-lista-titulo">
@@ -292,18 +339,17 @@ function Consultas() {
           <div className="consultas-filtros">
             <div className="consultas-busca">
               <Search size={18} />
-
               <input
                 type="text"
                 placeholder="Buscar paciente ou procedimento..."
                 value={busca}
-                onChange={(event) => setBusca(event.target.value)}
+                onChange={(e) => setBusca(e.target.value)}
               />
             </div>
 
             <select
               value={filtroStatus}
-              onChange={(event) => setFiltroStatus(event.target.value)}
+              onChange={(e) => setFiltroStatus(e.target.value)}
             >
               <option value="Todos">Todos os status</option>
               <option value="Confirmada">Confirmadas</option>
@@ -314,13 +360,13 @@ function Consultas() {
           </div>
         </div>
 
-        {/* TABELA */}
         <div className="consultas-table-container">
           <table className="consultas-table">
             <thead>
               <tr>
                 <th>Paciente</th>
                 <th>Procedimento</th>
+                <th>Dentista</th>
                 <th>Data</th>
                 <th>Horário</th>
                 <th>Status</th>
@@ -339,7 +385,6 @@ function Consultas() {
                             .charAt(0)
                             .toUpperCase()}
                         </div>
-
                         <div>
                           <strong>{consulta.paciente}</strong>
                           <span>Paciente</span>
@@ -348,6 +393,7 @@ function Consultas() {
                     </td>
 
                     <td>{consulta.procedimento}</td>
+                    <td>{consulta.dentista || "—"}</td>
 
                     <td>
                       <div className="consulta-data">
@@ -388,14 +434,9 @@ function Consultas() {
                 ))
               ) : (
                 <tr>
-                  <td
-                    colSpan="6"
-                    className="consultas-sem-resultado"
-                  >
+                  <td colSpan="7" className="consultas-sem-resultado">
                     <Search size={30} />
-
                     <strong>Nenhuma consulta encontrada</strong>
-
                     <span>
                       {carregando
                         ? "Carregando dados do banco..."
@@ -409,7 +450,6 @@ function Consultas() {
         </div>
       </section>
 
-      {/* MODAL DE NOVA CONSULTA */}
       {modalAberto && (
         <div
           style={{
@@ -420,6 +460,7 @@ function Consultas() {
             alignItems: "center",
             justifyContent: "center",
             zIndex: 9999,
+            padding: "16px",
           }}
         >
           <div
@@ -430,6 +471,8 @@ function Consultas() {
               borderRadius: "12px",
               width: "100%",
               maxWidth: "500px",
+              maxHeight: "90vh",
+              overflowY: "auto",
               boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.5)",
             }}
           >
@@ -441,12 +484,7 @@ function Consultas() {
                 marginBottom: "16px",
               }}
             >
-              <h2
-                style={{
-                  fontSize: "1.25rem",
-                  fontWeight: "bold",
-                }}
-              >
+              <h2 style={{ fontSize: "1.25rem", fontWeight: "bold" }}>
                 Nova Consulta
               </h2>
 
@@ -473,58 +511,63 @@ function Consultas() {
               }}
             >
               <div>
-                <label
-                  style={{
-                    fontSize: "0.875rem",
-                    color: "#cbd5e1",
-                    display: "block",
-                    marginBottom: "4px",
-                  }}
+                <label style={estiloLabel}>Paciente</label>
+                <select
+                  required
+                  value={form.pacienteId}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      pacienteId: e.target.value,
+                    })
+                  }
+                  style={estiloCampo}
                 >
-                  Paciente
-                </label>
-
-                {pacientes.length > 0 ? (
-                  <input
-                    list="lista-pacientes"
-                    required
-                    placeholder="Selecione ou digite o nome do paciente"
-                    value={form.paciente}
-                    onChange={(e) =>
-                      setForm({
-                        ...form,
-                        paciente: e.target.value,
-                      })
-                    }
-                    style={estiloCampo}
-                  />
-                ) : (
-                  <input
-                    required
-                    placeholder="Nome do paciente"
-                    value={form.paciente}
-                    onChange={(e) =>
-                      setForm({
-                        ...form,
-                        paciente: e.target.value,
-                      })
-                    }
-                    style={estiloCampo}
-                  />
-                )}
-
-                <datalist id="lista-pacientes">
+                  <option value="">Selecione um paciente</option>
                   {pacientes.map((p) => (
-                    <option key={p.id} value={p.nome} />
+                    <option key={p.id} value={p.id}>
+                      {p.nome}
+                    </option>
                   ))}
-                </datalist>
+                </select>
               </div>
 
-              <div>
-                <label style={estiloLabel}>
-                  Procedimento
-                </label>
+              {podeSelecionarDentista && (
+                <div>
+                  <label style={estiloLabel}>
+                    Dentista responsável
+                  </label>
+                  <select
+                    required
+                    value={form.dentistaId}
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        dentistaId: e.target.value,
+                      })
+                    }
+                    style={estiloCampo}
+                  >
+                    <option value="">
+                      Selecione o dentista
+                    </option>
+                    {dentistas.map((d) => (
+                      <option key={d.id} value={d.id}>
+                        {d.nome}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
+              {usuario?.perfil === "DENTISTA" && (
+                <p style={{ color: "#93c5fd", fontSize: "0.85rem" }}>
+                  A consulta será associada automaticamente ao seu usuário.
+                </p>
+              )}
+
+              <div>
+                <label style={estiloLabel}>Procedimento</label>
                 <input
                   required
                   placeholder="Ex: Limpeza, Restauração, Avaliação"
@@ -548,7 +591,6 @@ function Consultas() {
               >
                 <div>
                   <label style={estiloLabel}>Data</label>
-
                   <input
                     type="date"
                     required
@@ -565,7 +607,6 @@ function Consultas() {
 
                 <div>
                   <label style={estiloLabel}>Horário</label>
-
                   <input
                     type="time"
                     required
@@ -583,7 +624,6 @@ function Consultas() {
 
               <div>
                 <label style={estiloLabel}>Status</label>
-
                 <select
                   value={form.status}
                   onChange={(e) =>
@@ -601,6 +641,25 @@ function Consultas() {
                 </select>
               </div>
 
+              <div>
+                <label style={estiloLabel}>Observações</label>
+                <textarea
+                  value={form.observacoes}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      observacoes: e.target.value,
+                    })
+                  }
+                  placeholder="Observações sobre a consulta..."
+                  rows={3}
+                  style={{
+                    ...estiloCampo,
+                    resize: "vertical",
+                  }}
+                />
+              </div>
+
               <div
                 style={{
                   display: "flex",
@@ -612,31 +671,18 @@ function Consultas() {
                 <button
                   type="button"
                   onClick={() => setModalAberto(false)}
-                  style={{
-                    padding: "8px 16px",
-                    borderRadius: "6px",
-                    background: "#334155",
-                    color: "#fff",
-                    border: "none",
-                    cursor: "pointer",
-                  }}
+                  style={estiloBotaoCancelar}
+                  disabled={salvando}
                 >
                   Cancelar
                 </button>
 
                 <button
                   type="submit"
-                  style={{
-                    padding: "8px 16px",
-                    borderRadius: "6px",
-                    background: "#2563eb",
-                    color: "#fff",
-                    border: "none",
-                    cursor: "pointer",
-                    fontWeight: 600,
-                  }}
+                  style={estiloBotaoSalvar}
+                  disabled={salvando}
                 >
-                  Salvar Consulta
+                  {salvando ? "Salvando..." : "Salvar Consulta"}
                 </button>
               </div>
             </form>
@@ -661,6 +707,26 @@ const estiloCampo = {
   background: "#0f172a",
   color: "#fff",
   border: "1px solid #334155",
+  boxSizing: "border-box",
+};
+
+const estiloBotaoCancelar = {
+  padding: "8px 16px",
+  borderRadius: "6px",
+  background: "#334155",
+  color: "#fff",
+  border: "none",
+  cursor: "pointer",
+};
+
+const estiloBotaoSalvar = {
+  padding: "8px 16px",
+  borderRadius: "6px",
+  background: "#2563eb",
+  color: "#fff",
+  border: "none",
+  cursor: "pointer",
+  fontWeight: 600,
 };
 
 export default Consultas;

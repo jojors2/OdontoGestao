@@ -21,11 +21,7 @@ const {
   NODE_ENV = "development",
 } = process.env;
 
-if (
-  !SUPABASE_URL ||
-  !SUPABASE_ANON_KEY ||
-  !SUPABASE_SERVICE_ROLE_KEY
-) {
+if (!SUPABASE_URL || !SUPABASE_ANON_KEY || !SUPABASE_SERVICE_ROLE_KEY) {
   throw new Error(
     "Configure SUPABASE_URL, SUPABASE_ANON_KEY e SUPABASE_SERVICE_ROLE_KEY no arquivo .env."
   );
@@ -73,7 +69,6 @@ const origensPermitidas = [
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Permite requisições sem Origin, como chamadas servidor-servidor.
       if (!origin) {
         return callback(null, true);
       }
@@ -96,7 +91,7 @@ app.use(express.json());
 app.use(cookieParser());
 
 // ==========================================
-// CONFIGURAÇÃO DO COOKIE
+// COOKIE
 // ==========================================
 
 const COOKIE_NAME = "odontogestao_token";
@@ -117,7 +112,7 @@ const COOKIE_CLEAR_OPTIONS = {
 };
 
 // ==========================================
-// TRATAMENTO DE ERROS
+// ERROS
 // ==========================================
 
 function enviarErro(res, error, mensagem, status = 500) {
@@ -159,7 +154,7 @@ async function autenticarUsuario(req, res, next) {
     const { data: usuario, error: usuarioError } =
       await supabaseAdmin
         .from("Usuario")
-        .select("id, nome, email, perfil, cro")
+        .select("id, nome, email, perfil, cro, clinicaId")
         .eq("id", data.user.id)
         .maybeSingle();
 
@@ -170,6 +165,12 @@ async function autenticarUsuario(req, res, next) {
     if (!usuario) {
       return res.status(401).json({
         erro: "Usuário não encontrado.",
+      });
+    }
+
+    if (!usuario.clinicaId) {
+      return res.status(403).json({
+        erro: "Usuário não está vinculado a uma clínica.",
       });
     }
 
@@ -188,7 +189,7 @@ async function autenticarUsuario(req, res, next) {
 }
 
 // ==========================================
-// CONTROLE DE PERMISSÕES
+// PERMISSÕES
 // ==========================================
 
 function permitirPerfis(...perfisPermitidos) {
@@ -206,11 +207,62 @@ function permitirPerfis(...perfisPermitidos) {
   };
 }
 
+async function obterDentistaResponsavel(req, res, dentistaIdInformado) {
+  try {
+    // Se for dentista, associa automaticamente ao próprio usuário.
+    if (req.usuario.perfil === "DENTISTA") {
+      return req.usuario.id;
+    }
+
+    // ADMIN e SECRETARIA podem selecionar um dentista.
+    if (!["ADMIN", "SECRETARIA"].includes(req.usuario.perfil)) {
+      return res.status(403).json({
+        erro: "Você não tem permissão para cadastrar este registro.",
+      });
+    }
+
+    if (!dentistaIdInformado) {
+      return res.status(400).json({
+        erro: "Selecione o dentista responsável.",
+      });
+    }
+
+    // Verifica se o dentista pertence à clínica do usuário.
+    const { data: dentista, error } = await supabaseAdmin
+      .from("Usuario")
+      .select("id")
+      .eq("id", dentistaIdInformado)
+      .eq("clinicaId", req.usuario.clinicaId)
+      .eq("perfil", "DENTISTA")
+      .maybeSingle();
+
+    if (error) {
+      throw error;
+    }
+
+    if (!dentista) {
+      return res.status(400).json({
+        erro: "Dentista inválido ou não pertence à sua clínica.",
+      });
+    }
+
+    return dentista.id;
+  } catch (error) {
+    console.error("Erro ao validar dentista:", error);
+
+    return res.status(500).json({
+      erro: "Não foi possível validar o dentista responsável.",
+    });
+
+    return null;
+  }
+}
+
 // ==========================================
 // RELACIONAMENTO COM PACIENTES
 // ==========================================
 
-async function anexarPaciente(registros) {
+async function anexarPaciente(registros, clinicaId) {
   const lista = Array.isArray(registros)
     ? registros
     : [registros];
@@ -219,9 +271,7 @@ async function anexarPaciente(registros) {
     ...new Set(
       lista
         .map((item) => item.pacienteId)
-        .filter(
-          (id) => id !== null && id !== undefined
-        )
+        .filter((id) => id !== null && id !== undefined)
     ),
   ];
 
@@ -237,11 +287,11 @@ async function anexarPaciente(registros) {
       : resultado[0];
   }
 
-  const { data: pacientes, error } =
-    await supabaseAdmin
-      .from("Paciente")
-      .select("id, nome, telefone, email")
-      .in("id", ids);
+  const { data: pacientes, error } = await supabaseAdmin
+    .from("Paciente")
+    .select("id, nome, telefone, email")
+    .eq("clinicaId", clinicaId)
+    .in("id", ids);
 
   if (error) {
     throw error;
@@ -284,9 +334,7 @@ function dataSaoPaulo() {
 }
 
 function proximoDia(data) {
-  const [ano, mes, dia] = data
-    .split("-")
-    .map(Number);
+  const [ano, mes, dia] = data.split("-").map(Number);
 
   const proximaData = new Date(
     Date.UTC(ano, mes - 1, dia + 1)
@@ -338,7 +386,7 @@ app.post("/api/login", async (req, res) => {
     const { data: usuario, error: usuarioError } =
       await supabaseAdmin
         .from("Usuario")
-        .select("id, nome, email, perfil, cro")
+        .select("id, nome, email, perfil, cro, clinicaId")
         .eq("id", loginData.user.id)
         .maybeSingle();
 
@@ -346,9 +394,9 @@ app.post("/api/login", async (req, res) => {
       throw usuarioError;
     }
 
-    if (!usuario) {
+    if (!usuario || !usuario.clinicaId) {
       return res.status(403).json({
-        erro: "Usuário não cadastrado na clínica.",
+        erro: "Usuário não está vinculado a uma clínica.",
       });
     }
 
@@ -367,6 +415,40 @@ app.post("/api/login", async (req, res) => {
     );
   }
 });
+
+
+ // ==========================================
+ // LISTAR DENTISTAS DA PRÓPRIA CLÍNICA
+ // ==========================================
+
+app.get(
+  "/api/dentistas",
+  autenticarUsuario,
+  permitirPerfis("ADMIN", "SECRETARIA", "DENTISTA"),
+  async (req, res) => {
+    try {
+      const { data, error } = await supabaseAdmin
+        .from("Usuario")
+        .select("id, nome, email, cro")
+        .eq("clinicaId", req.usuario.clinicaId)
+        .eq("perfil", "DENTISTA")
+        .order("nome", { ascending: true });
+
+      if (error) {
+        throw error;
+      }
+
+      return res.json(data || []);
+    } catch (error) {
+      return enviarErro(
+        res,
+        error,
+        "Erro ao listar dentistas."
+      );
+    }
+  }
+);
+
 
 // ==========================================
 // LOGOUT
@@ -396,20 +478,21 @@ app.get(
 );
 
 // ==========================================
-// LISTAR USUÁRIOS
+// LISTAR USUÁRIOS DA CLÍNICA
 // ==========================================
 
 app.get(
   "/api/usuarios",
   autenticarUsuario,
   permitirPerfis("ADMIN"),
-  async (_req, res) => {
+  async (req, res) => {
     try {
       const { data, error } = await supabaseAdmin
         .from("Usuario")
         .select(
           "id, nome, email, perfil, cro, criadoEm, atualizadoEm"
         )
+        .eq("clinicaId", req.usuario.clinicaId)
         .order("nome", { ascending: true });
 
       if (error) {
@@ -428,7 +511,7 @@ app.get(
 );
 
 // ==========================================
-// CADASTRAR USUÁRIO
+// CADASTRAR USUÁRIO NA CLÍNICA
 // ==========================================
 
 app.post(
@@ -471,8 +554,7 @@ app.post(
         "RECEPCIONISTA",
       ];
 
-      const perfilFinal =
-        perfil || "RECEPCIONISTA";
+      const perfilFinal = perfil || "RECEPCIONISTA";
 
       if (!perfisPermitidos.includes(perfilFinal)) {
         return res.status(400).json({
@@ -523,6 +605,7 @@ app.post(
             email: emailNormalizado,
             perfil: perfilFinal,
             cro: cro || null,
+            clinicaId: req.usuario.clinicaId,
           })
           .select(
             "id, nome, email, perfil, cro, criadoEm, atualizadoEm"
@@ -565,8 +648,10 @@ app.post(
 app.get(
   "/api/dashboard",
   autenticarUsuario,
-  async (_req, res) => {
+  async (req, res) => {
     try {
+      const clinicaId = req.usuario.clinicaId;
+
       const hoje = dataSaoPaulo();
       const amanha = proximoDia(hoje);
 
@@ -579,7 +664,8 @@ app.get(
         .select("*", {
           count: "exact",
           head: true,
-        });
+        })
+        .eq("clinicaId", clinicaId);
 
       if (pacientesError) {
         throw pacientesError;
@@ -594,7 +680,8 @@ app.get(
         .select("*", {
           count: "exact",
           head: true,
-        });
+        })
+        .eq("clinicaId", clinicaId);
 
       if (totalConsultasError) {
         throw totalConsultasError;
@@ -609,6 +696,7 @@ app.get(
         .select(
           "id, pacienteId, data, horario, procedimento, status"
         )
+        .eq("clinicaId", clinicaId)
         .gte("data", hoje)
         .lt("data", amanha)
         .order("horario", { ascending: true });
@@ -627,6 +715,7 @@ app.get(
           count: "exact",
           head: true,
         })
+        .eq("clinicaId", clinicaId)
         .ilike("status", "pendente");
 
       if (orcamentosError) {
@@ -643,6 +732,7 @@ app.get(
           count: "exact",
           head: true,
         })
+        .eq("clinicaId", clinicaId)
         .ilike("status", "pendente");
 
       if (lembretesError) {
@@ -658,6 +748,7 @@ app.get(
         .select(
           "id, pacienteId, data, horario, procedimento, status"
         )
+        .eq("clinicaId", clinicaId)
         .gte("data", hoje)
         .order("data", { ascending: true })
         .order("horario", { ascending: true })
@@ -668,7 +759,10 @@ app.get(
       }
 
       const consultasComPaciente =
-        await anexarPaciente(proximasConsultas || []);
+        await anexarPaciente(
+          proximasConsultas || [],
+          clinicaId
+        );
 
       // Resumo de hoje
       const resumoHoje = {
@@ -750,12 +844,15 @@ function formatarPaciente(
 app.get(
   "/api/pacientes",
   autenticarUsuario,
-  async (_req, res) => {
+  async (req, res) => {
     try {
+      const clinicaId = req.usuario.clinicaId;
+
       const { data: pacientes, error } =
         await supabaseAdmin
           .from("Paciente")
           .select("*")
+          .eq("clinicaId", clinicaId)
           .order("nome", { ascending: true });
 
       if (error) {
@@ -768,6 +865,7 @@ app.get(
       } = await supabaseAdmin
         .from("Consulta")
         .select("pacienteId, data")
+        .eq("clinicaId", clinicaId)
         .order("data", { ascending: false });
 
       if (erroConsultas) {
@@ -779,13 +877,10 @@ app.get(
       for (const consulta of consultas || []) {
         if (
           consulta.pacienteId &&
-          !ultimaConsultaPorPaciente[
-            consulta.pacienteId
-          ]
+          !ultimaConsultaPorPaciente[consulta.pacienteId]
         ) {
-          ultimaConsultaPorPaciente[
-            consulta.pacienteId
-          ] = consulta.data;
+          ultimaConsultaPorPaciente[consulta.pacienteId] =
+            consulta.data;
         }
       }
 
@@ -825,19 +920,13 @@ app.post(
         status,
       } = req.body || {};
 
-      if (
-        !nome ||
-        !String(nome).trim()
-      ) {
+      if (!nome || !String(nome).trim()) {
         return res.status(400).json({
           erro: "O nome do paciente é obrigatório.",
         });
       }
 
-      if (
-        !telefone ||
-        !String(telefone).trim()
-      ) {
+      if (!telefone || !String(telefone).trim()) {
         return res.status(400).json({
           erro: "O telefone do paciente é obrigatório.",
         });
@@ -856,8 +945,8 @@ app.post(
           ? String(email).trim() || null
           : null,
         datanascimento: nascimento,
-        status:
-          status === "Inativo" ? "Inativo" : "Ativo",
+        status: status === "Inativo" ? "Inativo" : "Ativo",
+        clinicaId: req.usuario.clinicaId,
       };
 
       const { data, error } = await supabaseAdmin
@@ -902,19 +991,13 @@ app.put(
         status,
       } = req.body || {};
 
-      if (
-        !nome ||
-        !String(nome).trim()
-      ) {
+      if (!nome || !String(nome).trim()) {
         return res.status(400).json({
           erro: "O nome do paciente é obrigatório.",
         });
       }
 
-      if (
-        !telefone ||
-        !String(telefone).trim()
-      ) {
+      if (!telefone || !String(telefone).trim()) {
         return res.status(400).json({
           erro: "O telefone do paciente é obrigatório.",
         });
@@ -933,8 +1016,7 @@ app.put(
           ? String(email).trim() || null
           : null,
         datanascimento: nascimento,
-        status:
-          status === "Inativo" ? "Inativo" : "Ativo",
+        status: status === "Inativo" ? "Inativo" : "Ativo",
         atualizadoEm: new Date().toISOString(),
       };
 
@@ -942,11 +1024,18 @@ app.put(
         .from("Paciente")
         .update(atualizacao)
         .eq("id", id)
+        .eq("clinicaId", req.usuario.clinicaId)
         .select()
-        .single();
+        .maybeSingle();
 
       if (error) {
         throw error;
+      }
+
+      if (!data) {
+        return res.status(404).json({
+          erro: "Paciente não encontrado nesta clínica.",
+        });
       }
 
       return res.json(formatarPaciente(data));
@@ -971,10 +1060,13 @@ app.delete(
     try {
       const { id } = req.params;
 
-      const { error } = await supabaseAdmin
+      const { data, error } = await supabaseAdmin
         .from("Paciente")
         .delete()
-        .eq("id", id);
+        .eq("id", id)
+        .eq("clinicaId", req.usuario.clinicaId)
+        .select("id")
+        .maybeSingle();
 
       if (error) {
         if (error.code === "23503") {
@@ -985,6 +1077,12 @@ app.delete(
         }
 
         throw error;
+      }
+
+      if (!data) {
+        return res.status(404).json({
+          erro: "Paciente não encontrado nesta clínica.",
+        });
       }
 
       return res.json({
@@ -1030,11 +1128,11 @@ app.use((error, _req, res, _next) => {
 // INICIAR SERVIDOR
 // ==========================================
 
-app.listen(PORT, () => {
-  console.log(
-    `OdontoGestão API rodando na porta ${PORT}`
-  );
-  console.log(
-    `Ambiente: ${NODE_ENV}`
-  );
-});
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`OdontoGestão API rodando na porta ${PORT}`);
+    console.log(`Ambiente: ${NODE_ENV}`);
+  });
+}
+
+module.exports = app;

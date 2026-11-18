@@ -1,0 +1,13 @@
+
+{
+  "name": "odontogestao",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "backend",
+    "frontend-react"
+  ],
+  "scripts": {
+    "build": "npm run build --workspace=frontend-react"
+  }
+}
